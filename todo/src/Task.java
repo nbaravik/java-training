@@ -1,5 +1,7 @@
 public class Task {
 
+    public static final String FORMAT = "%-20s%-10s%-10s\n";
+
     private String name;
     private String date;
     private int time;
@@ -34,6 +36,6 @@ public class Task {
 
     public String toString() {
 
-        return String.format("%-20s%-10s%-10s%n", this.name, this.date, this.time);
+        return String.format(Task.FORMAT, this.name, this.date, this.time);
     }
 }
