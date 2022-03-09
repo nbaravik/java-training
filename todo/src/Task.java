@@ -1,41 +1,36 @@
 public class Task {
 
-    public static final String FORMAT = "%-20s%-10s%-10s\n";
+    public static final String FORMAT_2_COLUMNS = "%-6s%-10s\n";
 
+    private int id;
     private String name;
-    private String date;
-    private int time;
+    private boolean done;
 
-    public Task() {
-
-    }
-
-    public void setName(String name) {
+    public Task(int id, String name) {
+        this.id = id;
         this.name = name;
+        this.done = false;
     }
 
-    public String getName() {
-        return name;
-    }
+    public void setID(int id) { this.id = id; }
 
-    public void setDate(String date) {
-        this.date = date;
-    }
+    public int getID() { return id; }
 
-    public String getDate() {
-        return date;
-    }
+    public void setName(String name) { this.name = name; }
 
-    public void setTime(int time) {
-        this.time = time;
-    }
+    public String getName() { return name; }
 
-    public int getTime() {
-        return time;
-    }
+    public void setDone(boolean done) { this.done = done; };
+
+    public boolean getDone() { return done; };
 
     public String toString() {
 
-        return String.format(Task.FORMAT, this.name, this.date, this.time);
+        return toString(FORMAT_2_COLUMNS);
+    }
+
+    private String toString(String format) {
+
+        return String.format(format, this.id, this.name);
     }
 }
