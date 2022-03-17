@@ -1,7 +1,4 @@
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class Application {
 
@@ -15,6 +12,8 @@ public class Application {
     public static final String DRINK_ONE = "1";
     public static final String DRINK_TWO = "2";
     public static final String DRINK_THREE = "3";
+    public static final String DRINK_FOUR = "4";
+    public static final String DRINK_FIVE = "5";
 
     public static final Map<String, CoffeeDrink> drinksMenu;
 
@@ -23,101 +22,96 @@ public class Application {
         drinksMenu.put(DRINK_ONE, CoffeeDrinks.ESPRESSO);
         drinksMenu.put(DRINK_TWO, CoffeeDrinks.LATTE);
         drinksMenu.put(DRINK_THREE, CoffeeDrinks.CAPPUCCINO);
-
+        drinksMenu.put(DRINK_FOUR, CoffeeDrinks.SWEET_CAPPUCCINO);
+        drinksMenu.put(DRINK_FIVE, CoffeeDrinks.SWEET_LATTE);
     }
 
-    public static boolean toBuyCommandMethod(CoffeeMachine coffeeMachine, Scanner scanner) {
+    public static void handleBuyCommand(CoffeeMachine coffeeMachine, Scanner scanner) {
         System.out.print("What do you want to buy? ");
-        System.out.println("1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu:");
+
+        drinksMenu.forEach((num, drink) -> System.out.print( num + " - " + drink.getName() + ", "));
+        System.out.println("back - to main menu:");
         String nextLine = scanner.nextLine().trim();
 
         if (BACK.equalsIgnoreCase(nextLine)) {
-            return true;
+            return;
         }
-        if (EXIT.equalsIgnoreCase(nextLine)) {
-            return false;
-        }
-
-        if (drinksMenu.containsKey(nextLine)) {
-            String missingResource = coffeeMachine.buy(drinksMenu.get(nextLine));
-            if ("".equalsIgnoreCase(missingResource)) {
-                System.out.println("I have enough resources, making you a coffee!");
-            } else {
-                System.out.println("Sorry, not enough " + missingResource + "!");
-            }
-        } else {
+        if (!drinksMenu.containsKey(nextLine)) {
             System.out.println("Unknown command cannot be executed!");
+            return;
         }
-        return true;
-    }
-
-    public static boolean toFillCommandMethod(CoffeeMachine coffeeMachine, Scanner scanner) {
 
         try {
-            System.out.println("Write how many ml of " + CoffeeMachine.WATER + " do you want to add:");
-            int water = Integer.parseInt(scanner.nextLine().trim());
-            System.out.println("Write how many ml of " + CoffeeMachine.MILK + " do you want to add:");
-            int milk = Integer.parseInt(scanner.nextLine().trim());
-            System.out.println("Write how many grams of " + CoffeeMachine.COFFEE + " do you want to add:");
-            int coffee = Integer.parseInt(scanner.nextLine().trim());
-            System.out.println("Write how many " + CoffeeMachine.CUPS + " do you want to add:");
-            int cups = Integer.parseInt(scanner.nextLine().trim());
-            coffeeMachine.fill(water, milk, coffee, cups);
+            coffeeMachine.buy(drinksMenu.get(nextLine));
+            System.out.println("I have enough resources, making you a coffee!");
+        } catch (OutOfResourceException e) {
+            System.out.println("Sorry, not enough " + e.getResourceName() + "!");
+        }
+    }
+
+    public static void handleFillCommand(CoffeeMachine coffeeMachine, Scanner scanner) {
+
+        List<Resource> stuffResourcesList = coffeeMachine.getStuffResources();
+        Resource[] result = new Resource[stuffResourcesList.size()];
+        int i = 0;
+        try {
+            for (Resource entry : stuffResourcesList) {
+                System.out.println(entry.formatRequest());
+                int amount = Integer.parseInt(scanner.nextLine().trim());
+                result[i] = entry.withAmount(amount);
+                i++;
+            }
+            coffeeMachine.fill(result);
         } catch (NumberFormatException numberFormatException) {
             System.out.println("Resource quantity must be a number. Command cannot be executed!");
         }
-        return true;
-    }
-
-    public static boolean otherCommandsMethod(CoffeeMachine coffeeMachine, String command) {
-
-        switch (command) {
-
-            case REMAINING: {
-                System.out.println("The coffee machine has:");
-                Map<String, Integer> remaining = coffeeMachine.remaining();
-                Iterator iterator = remaining.entrySet().iterator();
-                while (iterator.hasNext()) {
-                    Map.Entry<String, Integer> entry = (Map.Entry) iterator.next();
-                    System.out.println(CoffeeMachine.resourceOutputFormat(entry.getKey(), entry.getValue()));
-                }
-                return true;
-            }
-            case TAKE: {
-                System.out.println("I gave you $" + coffeeMachine.take());
-                return true;
-            }
-            case EXIT: {
-                return false;
-            }
-            default: {
-                System.out.println("Command cannot be executed!");
-            }
-        }
-        return true;
     }
 
     public static void main(String[] args) {
 
         Scanner scanner = new Scanner(System.in);
 
-        CoffeeMachine coffeeMachine = new CoffeeMachine(400, 540, 120, 9, 550);
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(550),
+
+                Resources.getWater(400),
+                Resources.getMilk(540),
+                Resources.getCoffee(120),
+                Resources.getSugar(50),
+                Resources.getCups(9)
+        );
 
         boolean continueFlag = true;
         while (continueFlag) {
             System.out.println("Write action (buy, fill, take, remaining, exit):");
             String nextLine = scanner.nextLine();
             switch (nextLine) {
+                case EXIT: {
+                    continueFlag = false;
+                    break;
+                }
                 case BUY: {
-                    continueFlag = toBuyCommandMethod(coffeeMachine, scanner);  //special case
+                    handleBuyCommand(coffeeMachine, scanner);  //special case
                     break;
                 }
                 case FILL: {
-                    continueFlag = toFillCommandMethod(coffeeMachine, scanner);  //special case
+                    handleFillCommand(coffeeMachine, scanner);  //special case
+                    break;
+                }
+                case REMAINING: {
+                    System.out.println("The coffee machine has:");
+                    List<Resource> list = coffeeMachine.remaining();
+                    for (Resource entry : list) {
+                        System.out.println(entry.format());
+                    }
+                    break;
+                }
+                case TAKE: {
+                    System.out.println("I gave you $" + coffeeMachine.take());
                     break;
                 }
                 default: {
-                    continueFlag = otherCommandsMethod(coffeeMachine, nextLine.trim());
+                    System.out.println("Command cannot be executed!");
                 }
             }
         }

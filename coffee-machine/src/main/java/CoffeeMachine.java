@@ -1,154 +1,81 @@
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 public class CoffeeMachine {
 
-    public static final String WATER = "water";
-    public static final String MILK = "milk";
-    public static final String COFFEE = "coffee beans";
-    public static final String CUPS = "disposable cups";
-    public static final String CASH = "money";
+    private Resource[] stuff;
+    private Resource cash;
 
-    private int waterCapacity;
-    private int milkCapacity;
-    private int coffeeCapacity;
-    private int cupsAmount;
-    private int cashAmount;
+    private Map<String, Resource> resourceMap = new HashMap<>();
 
-    public CoffeeMachine(int water, int milk, int coffee, int cups, int cash) {
-        this.waterCapacity = water;
-        this.milkCapacity = milk;
-        this.coffeeCapacity = coffee;
-        this.cupsAmount = cups;
-        this.cashAmount = cash;
-    }
-
-    public static String resourceOutputFormat(String resource, int amount) {
-        switch (resource) {
-            case WATER:
-            case MILK: {
-                return amount + "ml of " + resource;
-            }
-            case COFFEE: {
-                return amount + "g of " + resource;
-            }
-            case CUPS: {
-                return amount + " of " + resource;
-            }
-            case CASH: {
-                return "$" + amount + " of " + resource;
-            }
+    public CoffeeMachine(Resource cash, Resource... stuff) {
+        this.cash = cash;
+        this.stuff = stuff;
+        for (Resource nextItem : stuff) {
+            resourceMap.put(nextItem.getName(), nextItem);
         }
-        return "Unknown resource name!";
+        resourceMap.put(cash.getName(), cash);
     }
 
-    public void fill(int water, int milk, int coffee, int cups) {
-        addWater(water);
-        addMilk(milk);
-        addCoffee(coffee);
-        addCups(cups);
+    // resources that needed to make a drink
+    public List<Resource> getStuffResources() {
+        return Arrays.asList(this.stuff);
+    }
+
+    // all resources (stuff + cash)
+    public List<Resource> getAllResources() {
+        List<Resource> allResources = new ArrayList<>();
+        allResources.addAll(Arrays.asList(stuff));
+        allResources.add(cash);
+        return allResources;
+    }
+
+    public List<Resource> remaining() {
+        return getAllResources();
     }
 
     public int take() {
-        int cashAmount = getCashAmount();
-        resetCash();
-        return cashAmount;
+        int cash = this.cash.getAmount();
+        this.cash.decreaseAmount(cash);
+        return cash;
     }
 
-    public Map remaining() {
+    public void fill(Resource ...refillableResources) {
 
-        Map<String, Integer> map = new LinkedHashMap<>();
-        map.put(WATER, this.getWaterCapacity());
-        map.put(MILK, this.getMilkCapacity());
-        map.put(COFFEE, this.getCoffeeCapacity());
-        map.put(CUPS, this.getCupsAmount());
-        map.put(CASH, this.getCashAmount());
-        return map;
-    }
-
-    // return missing resource if purchase is not possible
-    // return "" if purchase completed
-    public String buy(CoffeeDrink coffeeDrink) {
-
-        if (coffeeDrink.getWater() > this.getWaterCapacity()) {
-            return WATER;
+        for (Resource item : refillableResources) {
+            Resource nextResource = resourceMap.get(item.getName());
+            if (nextResource == null) {
+                continue;
+            }
+            nextResource.increaseAmount(item.getAmount());
         }
-        if (coffeeDrink.getMilk() > this.getMilkCapacity()) {
-            return MILK;
+    }
+
+    public void buy(CoffeeDrink coffeeDrink) throws OutOfResourceException {
+
+        checkIfEnoughResources(coffeeDrink);
+        Resource[] drinkResources = coffeeDrink.getResources();
+        for (Resource item : drinkResources) {
+            Resource nextResource = resourceMap.get(item.getName());
+            nextResource.decreaseAmount(item.getAmount());
         }
-        if (coffeeDrink.getCoffee() > this.getCoffeeCapacity()) {
-            return COFFEE;
+        Resource cash = resourceMap.get(coffeeDrink.getPrice().getName());
+        cash.increaseAmount(coffeeDrink.getPrice().getAmount());
+    }
+
+    private void checkIfEnoughResources(CoffeeDrink coffeeDrink) throws OutOfResourceException {
+
+        Resource[] resources = coffeeDrink.getResources();
+
+        for (Resource item : resources) {
+            Resource nextResource = resourceMap.get(item.getName());
+            if (nextResource == null) {
+                throw new MissingResourceException(item.getName());
+            }
+            if (item.getAmount() > resourceMap.get(item.getName()).getAmount()) {
+                throw new OutOfResourceException(item.getName());
+            }
         }
-        if (this.getCupsAmount() <= 0) {
-            return CUPS;
-        }
-        this.decreaseWater(coffeeDrink.getWater());
-        this.decreaseMilk(coffeeDrink.getMilk());
-        this.decreaseCoffee(coffeeDrink.getCoffee());
-        this.decreaseCups(1);
-        this.addCash(coffeeDrink.getPrice());
-        return "";
     }
 
 
-    public int getWaterCapacity() {
-        return this.waterCapacity;
-    }
-
-    public int getMilkCapacity() {
-        return this.milkCapacity;
-    }
-
-    public int getCoffeeCapacity() {
-        return this.coffeeCapacity;
-    }
-
-    public int getCupsAmount() {
-        return this.cupsAmount;
-    }
-
-    public int getCashAmount() {
-        return this.cashAmount;
-    }
-
-
-    private void addWater(int water) {
-        this.waterCapacity += water;
-    }
-
-    private void decreaseWater(int water) {
-        this.waterCapacity -= water;
-    }
-
-    private void addMilk(int milk) {
-        this.milkCapacity += milk;
-    }
-
-    private void decreaseMilk(int milk) {
-        this.milkCapacity -= milk;
-    }
-
-    private void addCoffee(int coffee) {
-        this.coffeeCapacity += coffee;
-    }
-
-    private void decreaseCoffee(int coffee) {
-        this.coffeeCapacity -= coffee;
-    }
-
-    private void addCups(int cups) {
-        this.cupsAmount += cups;
-    }
-
-    private void decreaseCups(int cups) {
-        this.cupsAmount -= cups;
-    }
-
-    private void addCash(int cash) {
-        this.cashAmount += cash;
-    }
-
-    private void resetCash() {
-        this.cashAmount = 0;
-    }
 }

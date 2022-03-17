@@ -1,30 +1,24 @@
 public class CoffeeDrink {
 
-    private int water;
-    private int milk;
-    private int coffee;
-    private int price;
+    private String name;
+    private Resource[] resources;
+    private Resource price;
 
-    CoffeeDrink(int water, int milk, int coffee, int price) {
-        this.water = water;
-        this.milk = milk;
-        this.coffee = coffee;
+    public CoffeeDrink(String name, Resource price, Resource... resources) {
+        this.name = name;
         this.price = price;
+        this.resources = resources;
     }
 
-    public int getWater() {
-        return this.water;
+    public Resource[] getResources() {
+        return resources;
     }
 
-    public int getMilk() {
-        return this.milk;
+    public Resource getPrice() {
+        return price;
     }
 
-    public int getCoffee() {
-        return this.coffee;
-    }
-
-    public int getPrice() {
-        return this.price;
+    public String getName() {
+        return name;
     }
 }

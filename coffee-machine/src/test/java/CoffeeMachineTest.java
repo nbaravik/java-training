@@ -1,78 +1,153 @@
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 public class CoffeeMachineTest {
 
     @Test
-    public void testResourceOutputFormat() {
-        Assert.assertEquals("100ml of water", CoffeeMachine.resourceOutputFormat(CoffeeMachine.WATER, 100));
-        Assert.assertEquals("100ml of milk", CoffeeMachine.resourceOutputFormat(CoffeeMachine.MILK, 100));
-        Assert.assertEquals("100g of coffee beans", CoffeeMachine.resourceOutputFormat(CoffeeMachine.COFFEE, 100));
-        Assert.assertEquals("10 of disposable cups", CoffeeMachine.resourceOutputFormat(CoffeeMachine.CUPS, 10));
-    }
-
-    @Test
     public void testFill() {
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(550),
 
-        CoffeeMachine coffeeMachine = new CoffeeMachine(100, 100, 100, 20, 10);
-        coffeeMachine.fill(100, 100, 70, 5);
-        Assert.assertEquals(200, coffeeMachine.getWaterCapacity());
-        Assert.assertEquals(200, coffeeMachine.getMilkCapacity());
-        Assert.assertEquals(170, coffeeMachine.getCoffeeCapacity());
-        Assert.assertEquals(25, coffeeMachine.getCupsAmount());
+                Resources.getWater(400),
+                Resources.getMilk(540),
+                Resources.getCoffee(120),
+                Resources.getSugar(50),
+                Resources.getCups(9)
+        );
+
+        Resource water = Resources.getWater(1000);
+        Resource milk = Resources.getMilk(1000);
+        Resource coffee = Resources.getCoffee(100);
+        Resource sugar = Resources.getSugar(50);
+        Resource cups = Resources.getCups(0);
+
+        coffeeMachine.fill(water, milk, coffee, sugar, cups);
+        List<Resource> resources = coffeeMachine.getAllResources();
+        for (Resource item : resources) {
+            switch (item.getName()) {
+                case Resources.WATER -> Assert.assertEquals(1400, item.getAmount());
+                case Resources.MILK -> Assert.assertEquals(1540, item.getAmount());
+                case Resources.COFFEE -> Assert.assertEquals(220, item.getAmount());
+                case Resources.SUGAR -> Assert.assertEquals(100, item.getAmount());
+                case Resources.CUPS -> Assert.assertEquals(9, item.getAmount());
+                case Resources.CASH -> Assert.assertEquals(550, item.getAmount());
+            }
+        }
     }
 
     @Test
     public void testTake() {
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(550),
 
-        CoffeeMachine coffeeMachine = new CoffeeMachine(100, 100, 100, 20, 10);
-        Assert.assertEquals(10, coffeeMachine.getCashAmount());
-        Assert.assertEquals(10, coffeeMachine.take());
-        Assert.assertEquals(0, coffeeMachine.getCashAmount());
+                Resources.getWater(400),
+                Resources.getMilk(540),
+                Resources.getCoffee(120),
+                Resources.getSugar(50),
+                Resources.getCups(9)
+        );
+
+        int cash = coffeeMachine.take();
+        Assert.assertEquals(550, cash);
+        List<Resource> resources = coffeeMachine.getAllResources();
+        for (Resource item : resources) {
+            if (item.getName().equalsIgnoreCase(Resources.CASH)) {
+                Assert.assertEquals(0, item.getAmount());
+            }
+        }
     }
 
     @Test
     public void testRemaining() {
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(700),
 
-        CoffeeMachine coffeeMachine = new CoffeeMachine(100, 100, 150, 20, 10);
-        Map<String, Integer> remaining = new LinkedHashMap<>() {{
-            put(CoffeeMachine.WATER, 100);
-            put(CoffeeMachine.MILK, 100);
-            put(CoffeeMachine.COFFEE, 150);
-            put(CoffeeMachine.CUPS, 20);
-            put(CoffeeMachine.CASH, 10);
-        }};
-        Assert.assertEquals(remaining, coffeeMachine.remaining());
+                Resources.getWater(1400),
+                Resources.getMilk(1540),
+                Resources.getCoffee(120),
+                Resources.getSugar(100),
+                Resources.getCups(20)
+        );
+
+        List<Resource> remaining = coffeeMachine.remaining();
+        for (Resource item : remaining) {
+            switch (item.getName()) {
+                case Resources.WATER -> Assert.assertEquals(1400, item.getAmount());
+                case Resources.MILK -> Assert.assertEquals(1540, item.getAmount());
+                case Resources.COFFEE -> Assert.assertEquals(120, item.getAmount());
+                case Resources.SUGAR -> Assert.assertEquals(100, item.getAmount());
+                case Resources.CUPS -> Assert.assertEquals(20, item.getAmount());
+                case Resources.CASH -> Assert.assertEquals(700, item.getAmount());
+            }
+        }
     }
 
     @Test
-    public void testBuy() {
-        CoffeeMachine coffeeMachine = new CoffeeMachine(1000, 1000, 500, 20, 0);
+    public void testBuy() throws OutOfResourceException {
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(700),
 
-        Assert.assertEquals("", coffeeMachine.buy(CoffeeDrinks.ESPRESSO));
-        Assert.assertEquals(750, coffeeMachine.getWaterCapacity());
-        Assert.assertEquals(1000, coffeeMachine.getMilkCapacity());
-        Assert.assertEquals(484, coffeeMachine.getCoffeeCapacity());
-        Assert.assertEquals(19, coffeeMachine.getCupsAmount());
-        Assert.assertEquals(4, coffeeMachine.getCashAmount());
+                Resources.getWater(1400),
+                Resources.getMilk(1540),
+                Resources.getCoffee(120),
+                Resources.getSugar(100),
+                Resources.getCups(20)
+        );
 
-        Assert.assertEquals("", coffeeMachine.buy(CoffeeDrinks.LATTE));
-        Assert.assertEquals(400, coffeeMachine.getWaterCapacity());
-        Assert.assertEquals(925, coffeeMachine.getMilkCapacity());
-        Assert.assertEquals(464, coffeeMachine.getCoffeeCapacity());
-        Assert.assertEquals(18, coffeeMachine.getCupsAmount());
-        Assert.assertEquals(11, coffeeMachine.getCashAmount());
+        CoffeeDrink coffeeDrink = new CoffeeDrink(
+                "some drink",
+                Resources.getCash(10),
 
-        Assert.assertEquals("", coffeeMachine.buy(CoffeeDrinks.CAPPUCCINO));
-        Assert.assertEquals(200, coffeeMachine.getWaterCapacity());
-        Assert.assertEquals(825, coffeeMachine.getMilkCapacity());
-        Assert.assertEquals(452, coffeeMachine.getCoffeeCapacity());
-        Assert.assertEquals(17, coffeeMachine.getCupsAmount());
-        Assert.assertEquals(17, coffeeMachine.getCashAmount());
+                Resources.getWater(100),
+                Resources.getMilk(50),
+                Resources.getCoffee(20),
+                Resources.getSugar(10),
+                Resources.getCups(1)
+        );
 
-        Assert.assertEquals(CoffeeMachine.WATER, coffeeMachine.buy(CoffeeDrinks.LATTE));
+        coffeeMachine.buy(coffeeDrink);
+        List<Resource> remaining = coffeeMachine.getAllResources();
+        for (Resource item : remaining) {
+            switch (item.getName()) {
+                case Resources.WATER -> Assert.assertEquals(1300, item.getAmount());
+                case Resources.MILK -> Assert.assertEquals(1490, item.getAmount());
+                case Resources.COFFEE -> Assert.assertEquals(100, item.getAmount());
+                case Resources.SUGAR -> Assert.assertEquals(90, item.getAmount());
+                case Resources.CUPS -> Assert.assertEquals(19, item.getAmount());
+                case Resources.CASH -> Assert.assertEquals(710, item.getAmount());
+            }
+        }
+    }
+
+    @Test
+    public void buyFailedTest() {
+        CoffeeMachine coffeeMachine = new CoffeeMachine(
+                Resources.getCash(700),
+
+                Resources.getWater(1000),
+                Resources.getMilk(1000),
+                Resources.getCoffee(15),
+                Resources.getSugar(100),
+                Resources.getCups(20)
+        );
+
+        CoffeeDrink coffeeDrink = new CoffeeDrink(
+                "some drink",
+                Resources.getCash(10),
+
+                Resources.getWater(100),
+                Resources.getMilk(50),
+                Resources.getCoffee(20),
+                Resources.getSugar(10),
+                Resources.getCups(1)
+        );
+        try {
+            coffeeMachine.buy(coffeeDrink);
+        } catch (OutOfResourceException e) {
+            Assert.assertEquals(Resources.COFFEE, e.getResourceName());
+            Assert.assertTrue(true);
+        }
     }
 }
