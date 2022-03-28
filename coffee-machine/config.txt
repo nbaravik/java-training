@@ -1,0 +1,6 @@
+water=650
+milk=825
+coffee beans=180
+sugar=150
+disposable cups=50
+money=150

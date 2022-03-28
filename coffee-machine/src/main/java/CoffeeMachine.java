@@ -16,6 +16,21 @@ public class CoffeeMachine {
         resourceMap.put(cash.getName(), cash);
     }
 
+    public CoffeeMachine(List<Resource> allResources) {
+
+        List<Resource> stuffRes = new ArrayList<>();
+        this.cash = Resources.getCash(0); //in case there is no money resource in initial configuration
+        for ( Resource item : allResources ) {
+            resourceMap.put(item.getName(), item);
+            if (item.getName().equalsIgnoreCase(Resources.CASH)) {
+                this.cash = item;
+            } else {
+                stuffRes.add(item);
+            }
+        }
+        this.stuff = stuffRes.toArray(new Resource[0]);
+    }
+
     // resources that needed to make a drink
     public List<Resource> getStuffResources() {
         return Arrays.asList(this.stuff);
@@ -76,6 +91,4 @@ public class CoffeeMachine {
             }
         }
     }
-
-
 }

@@ -14,6 +14,33 @@ public class Resources {
     public static final String PIECE = "";
     public static final String DOLLAR = "$";
 
+    public static final String FILE_REGEX = "=";
+
+    public static Resource initResourceByName(String resourceShortName, int amount) {
+        switch (resourceShortName) {
+            case WATER: {
+                return getWater(amount);
+            }
+            case MILK: {
+                return getMilk(amount);
+            }
+            case COFFEE: {
+                return getCoffee(amount);
+            }
+            case SUGAR: {
+                return getSugar(amount);
+            }
+            case CUPS: {
+                return getCups(amount);
+            }
+            case CASH: {
+                return getCash(amount);
+            }
+            default:
+                throw new MissingResourceException(resourceShortName);
+        }
+    }
+
     public static Resource getWater(int amount) {
         Resource water = new Resource(WATER, amount, MILLILITER);
         return water;

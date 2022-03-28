@@ -1,3 +1,5 @@
+import java.io.*;
+import java.nio.file.Path;
 import java.util.*;
 
 public class Application {
@@ -29,7 +31,7 @@ public class Application {
     public static void handleBuyCommand(CoffeeMachine coffeeMachine, Scanner scanner) {
         System.out.print("What do you want to buy? ");
 
-        drinksMenu.forEach((num, drink) -> System.out.print( num + " - " + drink.getName() + ", "));
+        drinksMenu.forEach((num, drink) -> System.out.print(num + " - " + drink.getName() + ", "));
         System.out.println("back - to main menu:");
         String nextLine = scanner.nextLine().trim();
 
@@ -67,19 +69,51 @@ public class Application {
         }
     }
 
+    public static CoffeeMachine initCoffeeMachineFromFile(File file) throws IOException {
+
+        List<Resource> resourcesFromFile = new LinkedList<>();
+
+        try (FileReader fileReader = new FileReader(file)) {
+            Scanner scanner = new Scanner(fileReader);
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                String[] res = line.split(Resources.FILE_REGEX);
+                resourcesFromFile.add(Resources.initResourceByName(res[0], Integer.parseInt(res[1])));
+            }
+        }
+        return new CoffeeMachine(resourcesFromFile);
+    }
+
+    public static void saveCoffeeMachineInFile(CoffeeMachine coffeeMachine, File file) throws IOException {
+
+        try (FileWriter fileWriter = new FileWriter(file)) {
+            List<Resource> list = coffeeMachine.remaining();
+            for (Resource entry : list) {
+
+                String dataString = entry.getName() + Resources.FILE_REGEX + entry.getAmount() + System.getProperty("line.separator");
+                fileWriter.write(dataString);
+            }
+        }
+        System.out.println("Coffee machine configuration was saved in " + file.getName());
+    }
+
     public static void main(String[] args) {
 
+        CoffeeMachine coffeeMachine;
+        String configPath = Path.of("coffee-machine", "config.txt").toString();
+
+        if (args.length > 0) {
+            configPath = args[0];
+        }
+
+        File configFile = new File(configPath);
+        try {
+            coffeeMachine = initCoffeeMachineFromFile(configFile);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to load coffee machine parameters from " + configPath, e);
+        }
+
         Scanner scanner = new Scanner(System.in);
-
-        CoffeeMachine coffeeMachine = new CoffeeMachine(
-                Resources.getCash(550),
-
-                Resources.getWater(400),
-                Resources.getMilk(540),
-                Resources.getCoffee(120),
-                Resources.getSugar(50),
-                Resources.getCups(9)
-        );
 
         boolean continueFlag = true;
         while (continueFlag) {
@@ -88,6 +122,11 @@ public class Application {
             switch (nextLine) {
                 case EXIT: {
                     continueFlag = false;
+                    try {
+                        saveCoffeeMachineInFile(coffeeMachine, configFile);
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to save coffee machine parameters in " + configPath, e);
+                    }
                     break;
                 }
                 case BUY: {
