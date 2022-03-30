@@ -1,29 +1,10 @@
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
-
 public class StringToIntConverter {
-
-    public static final Map<Byte, Integer> digitsHashMap;
-
-    static {
-        digitsHashMap = new HashMap<>();
-        digitsHashMap.put((byte) 48, 0);
-        digitsHashMap.put((byte) 49, 1);
-        digitsHashMap.put((byte) 50, 2);
-        digitsHashMap.put((byte) 51, 3);
-        digitsHashMap.put((byte) 52, 4);
-        digitsHashMap.put((byte) 53, 5);
-        digitsHashMap.put((byte) 54, 6);
-        digitsHashMap.put((byte) 55, 7);
-        digitsHashMap.put((byte) 56, 8);
-        digitsHashMap.put((byte) 57, 9);
-    }
 
     public static int parseString(String string) {
 
-        int result = 0;
-        byte[] numChars = string.getBytes(StandardCharsets.UTF_8);
+        double result = 0;
+        char[] numChars = string.toCharArray();
+
         int length = string.length();
         boolean isPositive = true;
         int nextDigit;
@@ -34,18 +15,31 @@ public class StringToIntConverter {
         }
 
         if (numChars[0] == '-') {
+            if (length >= 12) {
+                throw new NumberFormatException("String \"" + string + "\" cannot be converted. Value is less than Integer.MIN_VALUE.");
+            }
             isPositive = false;
             j = 1;
+        } else if (length >= 11) {
+            throw new NumberFormatException("String \"" + string + "\" cannot be converted. Integer.MAX_VALUE exceeded.");
         }
 
         for (int i = j; i < length; i++) {
-            if (digitsHashMap.containsKey(numChars[i])) {
-                nextDigit = digitsHashMap.get(numChars[i]);
-                result += nextDigit * Math.pow(10, length - i - 1);
+            nextDigit = numChars[i] - '0';
+            if (nextDigit >= 0 && nextDigit <= 9) {
+                result = result + nextDigit * Math.pow(10, length - i - 1);
             } else {
                 throw new NumberFormatException("String \"" + string + "\" cannot be converted to Integer");
             }
         }
-        return (isPositive) ? result : result * (-1);
+        result = (isPositive) ? result : result * (-1);
+
+        if (result > Integer.MAX_VALUE) {
+            throw new NumberFormatException("String \"" + string + "\" cannot be converted. Integer.MAX_VALUE exceeded.");
+        }
+        if (result < Integer.MIN_VALUE) {
+            throw new NumberFormatException("String \"" + string + "\" cannot be converted. Value is less than Integer.MIN_VALUE.");
+        }
+        return (int) result;
     }
 }
