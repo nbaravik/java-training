@@ -25,4 +25,44 @@ public class Sorts {
             }
         }
     }
+
+    public static void quickSort(int[] array) {
+
+        if (array.length < 2) {
+            return;
+        }
+        int low = 0;
+        int high = array.length - 1;
+        makeQuickSort(array, low, high);
+    }
+
+    private static void makeQuickSort(int[] array, int leftIndex, int rightIndex) {
+
+        if (leftIndex >= rightIndex) {  // basic case
+            return;
+        }
+
+        int keyIndex = leftIndex + (rightIndex - leftIndex) / 2;
+        int keyElement = array[keyIndex];
+
+        int i = leftIndex;    // left from keyElement
+        int j = rightIndex;   // right from support Element
+        while (i <= j) {
+            while (array[i] < keyElement) {
+                i++;
+            }
+            while (array[j] > keyElement) {
+                j--;
+            }
+            if (i <= j) {
+                int temp = array[i];
+                array[i] = array[j];
+                array[j] = temp;
+                i++;
+                j--;
+            }
+        }
+        makeQuickSort(array, leftIndex, i-1);
+        makeQuickSort(array, i, rightIndex);
+    }
 }
