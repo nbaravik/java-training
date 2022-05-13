@@ -1,84 +1,95 @@
-import java.util.LinkedList;
-import java.util.stream.Collectors;
-
 public class BigNumber {
+
+    private static final BigNumber BIG_NUMBER_ZERO = new BigNumber("0", true);
 
     private String absValue;
     private boolean positive;
 
+    // public constructor with all checks
     public BigNumber(String num) {
+
+        if (num == null) {
+            throw new NumberFormatException("String must not be NULL!");
+        }
+
+        num.trim();
         if (num.length() == 0) {
-            throw new NumberFormatException("String must not be empty");
+            throw new NumberFormatException("String must not be empty!");
         }
 
-        int i = 0;
-        char[] numChars = num.toCharArray();
-        if (numChars[0] == '-') {
-            if (numChars.length > 1) {
-                positive = false;
-                i++;
-            } else {
-                throw new NumberFormatException(num + " is not a number");
-            }
-        } else {
-            positive = true;
-        }
+        positive = (num.charAt(0) == '-') ? false : true;
 
-        for (int j = i; j < numChars.length; j++) {
-            int digit = numChars[j] - '0';
+        int i = positive ? 0 : 1;
+        boolean startOfLine = true;
+
+        for (int j = i; j < num.length(); j++) {
+            int digit = charToDigit(num.charAt(j));
             if (digit < 0 || digit > 9) {
                 throw new NumberFormatException(num + " is not a number");
+            } else if (digit == 0 && startOfLine) {
+                i++;
+            } else {
+                startOfLine = false;
             }
         }
-        absValue = num.substring(i);
+
+        // case   "00" = "0",       case   "012" = "12"
+        // case  "-00" - INVALID,   case  "-012" = "-12"
+        if (!positive && num.length() == i) {
+            throw new NumberFormatException(num + " is not a number");
+        } else {
+            absValue = (i < num.length()) ? num.substring(i) : "0";
+        }
     }
 
-    public boolean isPositive() {
-        return positive;
+    // private constructor for internal use
+    private BigNumber(String validAbsValue, boolean isPositive) {
+        absValue = validAbsValue;
+        positive = isPositive;
     }
 
-    public String getAbsValue() {
-        return absValue;
+    private int charToDigit(char ch) {
+        return ch - '0';
+    }
+
+    // "123" -> "000123"
+    private String addSomeZeros(String str, int length) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length - str.length(); i++) {
+            sb.append('0');
+        }
+        return sb.append(str).toString();
     }
 
     public int compareTo(BigNumber num) {
 
         // this - positive, num - negative
-        if (this.positive && !num.isPositive()) {
+        if (this.positive && !num.positive) {
             return 1;
         }
         // this - negative, num - positive
-        if (!this.positive && num.isPositive()) {
+        if (!this.positive && num.positive) {
             return -1;
         }
-        // this - positive, num - positive, this has more digits than num
-        if (absValue.length() > num.getAbsValue().length() && this.positive && num.isPositive()) {
-            return 1;
+        // both has the same sigh, but this has more digits
+        if (absValue.length() > num.absValue.length()) {
+            return (this.positive) ? 1 : -1;
         }
-        // this - positive, num - positive, this has fewer digits than num
-        if (absValue.length() < num.getAbsValue().length() && this.positive && num.isPositive()) {
-            return -1;
+        // both has the same sigh, but this has fewer digits
+        if (absValue.length() < num.absValue.length()) {
+            return (this.positive) ? -1 : 1;
         }
-        // this - negative, num - negative, this has more digits than num
-        if (absValue.length() > num.getAbsValue().length() && !this.positive && !num.isPositive()) {
-            return -1;
-        }
-        // this - negative, num - negative, this has fewer digits than num
-        if (absValue.length() < num.getAbsValue().length() && !this.positive && !num.isPositive()) {
-            return 1;
-        }
-        // this and num match in number of digits and signs
-        if (absValue.length() == num.getAbsValue().length()) {
+
+        // both has the same sigh and same number of digits
+        if (absValue.length() == num.absValue.length()) {
             for (int i = 0; i < absValue.length(); i++) {
-                int digitThis = this.absValue.charAt(i) - '0';
-                int digitNum = num.getAbsValue().charAt(i) - '0';
-                if (digitThis != digitNum) {
-                    if (this.positive && num.isPositive()) {
-                        return (digitThis > digitNum) ? 1 : -1;
-                    }
-                    if (!this.positive && !num.isPositive()) {
-                        return (digitThis > digitNum) ? -1 : 1;
-                    }
+                int digitThis = charToDigit(this.absValue.charAt(i));
+                int digitNum = charToDigit(num.absValue.charAt(i));
+                if (digitThis > digitNum) {
+                    return (this.positive) ? 1 : -1;
+                }
+                if (digitThis < digitNum) {
+                    return (this.positive) ? -1 : 1;
                 }
             }
         }
@@ -87,147 +98,133 @@ public class BigNumber {
     }
 
     public String toString() {
-        if (positive) {
-            return absValue;
-        } else {
-            return "-" + absValue;
-        }
-    }
-
-    private int[] stringToArrayOfDigits(String s, int arraySize) {
-        int[] result = new int[arraySize];
-        int delta = arraySize - s.length();
-
-        for (int i = 0; i < arraySize; i++) {
-            if (i < delta) {
-                result[i] = 0;
-            } else {
-                result[i] = s.charAt(i - delta) - '0';
-            }
-        }
-        return result;
+        return (positive) ? absValue : "-" + absValue;
     }
 
     // addition of two positive numbers
-    private String digitsPlus(String number1, String number2) {
+    private String digitsPlus(String num1, String num2) {
 
-        int arraysLength;
-        if (number1.length() >= number2.length()) {
-            arraysLength = number1.length();
-        } else {
-            arraysLength = number2.length();
+        StringBuilder resultSB = new StringBuilder();
+
+        if (num1.length() > num2.length()) {
+            num2 = addSomeZeros(num2, num1.length());
         }
-        int[] array1 = stringToArrayOfDigits(number1, arraysLength);
-        int[] array2 = stringToArrayOfDigits(number2, arraysLength);
+        if (num1.length() < num2.length()) {
+            num1 = addSomeZeros(num1, num2.length());
+        }
 
-        LinkedList<Integer> resultList = new LinkedList<>();
-        int additional = 0;
-        for (int i = array1.length - 1; i >= 0; i--) {
-
-            int next = array1[i] + array2[i] + additional;
+        int addTens = 0;
+        for (int i = num1.length() - 1; i >= 0; i--) {
+            int next = charToDigit(num1.charAt(i)) + charToDigit(num2.charAt(i)) + addTens;
             if (next < 10) {
-                resultList.addFirst(next);
-                additional = 0;
+                resultSB.append(next);
+                addTens = 0;
             } else {
-                resultList.addFirst(next % 10);
-                additional = 1;
+                resultSB.append(next % 10);
+                addTens = 1;
             }
         }
-        String resultString = resultList.stream().map(n -> String.valueOf(n)).collect(Collectors.joining(""));
-        return resultString;
+        resultSB.trimToSize();
+        return resultSB.reverse().toString();
     }
 
     // subtraction of two positive numbers
-    private String digitsMinus(String number1, String number2) {
+    private String digitsMinus(String num1, String num2) {
 
-        int arraysLength;
-        if (number1.length() >= number2.length()) {
-            arraysLength = number1.length();
-        } else {
-            arraysLength = number2.length();
+        StringBuilder resultSB = new StringBuilder();
+
+        if (num1.length() > num2.length()) {
+            num2 = addSomeZeros(num2, num1.length());
         }
-        int[] array1 = stringToArrayOfDigits(number1, arraysLength);
-        int[] array2 = stringToArrayOfDigits(number2, arraysLength);
+        if (num1.length() < num2.length()) {
+            num1 = addSomeZeros(num1, num2.length());
+        }
 
-        LinkedList<Integer> resultList = new LinkedList<>();
-        for (int i = array1.length - 1; i >= 0; i--) {
-            if (array1[i] < array2[i]) {
-                array1[i] += 10;
-                int j = i - 1;
-                while (array1[j] == 0) {
-                    array1[j] += 9;
-                    j--;
-                }
-                array1[j]--;
+        int addUnits = 0;
+        int subTens = 0;
+        for (int i = num1.length() - 1; i >= 0; i--) {
+            int next = charToDigit(num1.charAt(i)) - subTens - charToDigit(num2.charAt(i));
+            if (next < 0) {
+                subTens = 1;
+                addUnits = 10;
+            } else {
+                subTens = 0;
             }
-            int next = array1[i] - array2[i];
-            resultList.addFirst(next);
+            next += addUnits;
+            resultSB.append(next);
+            addUnits = 0;
         }
-        while (resultList.getFirst() == 0 && resultList.size() > 1) {
-            resultList.removeFirst();
+
+        int i = resultSB.length() - 1;
+        while (resultSB.charAt(i) == '0' && resultSB.length() > 1) {
+            resultSB.deleteCharAt(i);
+            i--;
         }
-        String resultString = resultList.stream().map(n -> String.valueOf(n)).collect(Collectors.joining(""));
-        return resultString;
+        resultSB.trimToSize();
+        return resultSB.reverse().toString();
     }
 
     public BigNumber plus(BigNumber num) {
 
         // this and num are both positive
-        if (this.positive && num.isPositive()) {
-            String plusThisPlusNum = digitsPlus(this.absValue, num.getAbsValue());
-            return new BigNumber(plusThisPlusNum);
+        if (this.positive && num.positive) {
+            String thisPlusNum = digitsPlus(this.absValue, num.absValue);
+            return new BigNumber(thisPlusNum, true);
         }
 
         // this and num are both negative
-        if (!this.positive && !num.isPositive()) {
-            String minusThisMinusNum = "-" + digitsPlus(this.absValue, num.getAbsValue());
-            return new BigNumber(minusThisMinusNum);
+        if (!this.positive && !num.positive) {
+            String thisPlusNum = digitsPlus(this.absValue, num.absValue);
+            return new BigNumber(thisPlusNum, false);
         }
 
-        BigNumber absThis = new BigNumber(this.absValue);
-        BigNumber absNum = new BigNumber(num.getAbsValue());
+        BigNumber absThis = new BigNumber(this.absValue, true);
+        BigNumber absNum = new BigNumber(num.absValue, true);
+        int compareAbsValuesInt = absThis.compareTo(absNum);
+
         // abs_this is bigger than abs_num
-        if (absThis.compareTo(absNum) > 0) {
-            return (this.positive) ? new BigNumber(digitsMinus(this.absValue, num.getAbsValue())) :
-                    new BigNumber("-" + digitsMinus(this.absValue, num.getAbsValue()));
+        if (compareAbsValuesInt > 0) {
+            String thisMinusNum = digitsMinus(this.absValue, num.absValue);
+            return (this.positive) ? new BigNumber(thisMinusNum, true) : new BigNumber(thisMinusNum, false);
         }
         // abs_this smaller than abs_num
         if (absThis.compareTo(absNum) < 0) {
-            return (this.positive) ? new BigNumber("-" + digitsMinus(num.getAbsValue(), this.absValue)) :
-                    new BigNumber(digitsMinus(num.getAbsValue(), this.absValue));
+            String numMinusThis = digitsMinus(num.absValue, this.absValue);
+            return (this.positive) ? new BigNumber(numMinusThis, false) : new BigNumber(numMinusThis, true);
         }
         // |this| == |num|, but one of it is negative, the other - positive
-        return new BigNumber("0");
+        return BIG_NUMBER_ZERO;
     }
 
 
     public BigNumber minus(BigNumber num) {
 
         // this is positive and num is negative
-        if (this.positive && !num.isPositive()) {
-            String plusThisPlusNum = digitsPlus(this.absValue, num.getAbsValue());
-            return new BigNumber(plusThisPlusNum);
+        if (this.positive && !num.positive) {
+            String thisPlusNum = digitsPlus(this.absValue, num.absValue);
+            return new BigNumber(thisPlusNum, true);
         }
 
         // this is negative and num is positive
-        if (!this.positive && num.isPositive()) {
-            String minusThisMinusNum = "-" + digitsPlus(this.absValue, num.getAbsValue());
-            return new BigNumber(minusThisMinusNum);
+        if (!this.positive && num.positive) {
+            String thisPlusNum = digitsPlus(this.absValue, num.absValue);
+            return new BigNumber(thisPlusNum, false);
         }
 
-        BigNumber absThis = new BigNumber(this.absValue);
-        BigNumber absNum = new BigNumber(num.getAbsValue());
+        BigNumber absThis = new BigNumber(this.absValue, true);
+        BigNumber absNum = new BigNumber(num.absValue, true);
+        int compareAbsValuesInt = absThis.compareTo(absNum);
         // abs_this is bigger than abs_num
-        if (absThis.compareTo(absNum) > 0) {
-            return (this.positive) ? new BigNumber(digitsMinus(this.absValue, num.getAbsValue())) :
-                    new BigNumber("-" + digitsMinus(this.absValue, num.getAbsValue()));
+        if (compareAbsValuesInt > 0) {
+            String thisMinusNum = digitsMinus(this.absValue, num.absValue);
+            return (this.positive) ? new BigNumber(thisMinusNum, true) : new BigNumber(thisMinusNum, false);
         }
         // abs_this smaller than abs_num
-        if (absThis.compareTo(absNum) < 0) {
-            return (this.positive) ? new BigNumber("-" + digitsMinus(num.getAbsValue(), this.absValue)) :
-                    new BigNumber(digitsMinus(num.getAbsValue(), this.absValue));
+        if (compareAbsValuesInt < 0) {
+            String numMinusThis = digitsMinus(num.absValue, this.absValue);
+            return (this.positive) ? new BigNumber(numMinusThis, false) : new BigNumber(numMinusThis, true);
         }
         // |this| == |num| and both have the same sign
-        return new BigNumber("0");
+        return BIG_NUMBER_ZERO;
     }
 }
