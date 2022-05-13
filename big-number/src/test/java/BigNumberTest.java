@@ -9,14 +9,14 @@ public class BigNumberTest {
             new BigNumber(null);
         } catch (NumberFormatException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("String must not be NULL!", e.getMessage());
+            Assert.assertEquals("String must not be NULL", e.getMessage());
         }
 
         try {
             new BigNumber("");
         } catch (NumberFormatException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("String must not be empty!", e.getMessage());
+            Assert.assertEquals("String must not be empty", e.getMessage());
         }
 
         try {

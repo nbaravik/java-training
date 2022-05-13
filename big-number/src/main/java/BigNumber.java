@@ -1,6 +1,6 @@
 public class BigNumber {
 
-    private static final BigNumber BIG_NUMBER_ZERO = new BigNumber("0", true);
+    public static final BigNumber ZERO = new BigNumber("0", true);
 
     private String absValue;
     private boolean positive;
@@ -9,36 +9,24 @@ public class BigNumber {
     public BigNumber(String num) {
 
         if (num == null) {
-            throw new NumberFormatException("String must not be NULL!");
+            throw new NumberFormatException("String must not be NULL");
         }
 
         num.trim();
         if (num.length() == 0) {
-            throw new NumberFormatException("String must not be empty!");
+            throw new NumberFormatException("String must not be empty");
         }
 
-        positive = (num.charAt(0) == '-') ? false : true;
+        positive = (num.charAt(0) != '-') ? true : false;
+        String subString = (positive) ? num : num.substring(1);
 
-        int i = positive ? 0 : 1;
-        boolean startOfLine = true;
-
-        for (int j = i; j < num.length(); j++) {
-            int digit = charToDigit(num.charAt(j));
-            if (digit < 0 || digit > 9) {
+        if (isStringValid(subString)) {
+            absValue = trimZeros(subString);
+            if (!positive && "0".equals(absValue)) {  // special case: "-0" is invalid
                 throw new NumberFormatException(num + " is not a number");
-            } else if (digit == 0 && startOfLine) {
-                i++;
-            } else {
-                startOfLine = false;
             }
-        }
-
-        // case   "00" = "0",       case   "012" = "12"
-        // case  "-00" - INVALID,   case  "-012" = "-12"
-        if (!positive && num.length() == i) {
-            throw new NumberFormatException(num + " is not a number");
         } else {
-            absValue = (i < num.length()) ? num.substring(i) : "0";
+            throw new NumberFormatException(num + " is not a number");
         }
     }
 
@@ -52,8 +40,32 @@ public class BigNumber {
         return ch - '0';
     }
 
+    // string consists of digits and not empty
+    private boolean isStringValid(String str) {
+        if (str.length() == 0) return false;
+
+        for (int j = 0; j < str.length(); j++) {
+            int digit = charToDigit(str.charAt(j));
+            if (digit < 0 || digit > 9) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // "000123" -> "123"
+    private String trimZeros(String str) {
+        StringBuilder sb = new StringBuilder(str);
+        int i = 0;
+        while (sb.charAt(i) == '0' && sb.length() > 1) {
+            sb.deleteCharAt(i);
+        }
+        sb.trimToSize();
+        return sb.toString();
+    }
+
     // "123" -> "000123"
-    private String addSomeZeros(String str, int length) {
+    private String alignWithZeros(String str, int length) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < length - str.length(); i++) {
             sb.append('0');
@@ -63,34 +75,27 @@ public class BigNumber {
 
     public int compareTo(BigNumber num) {
 
-        // this - positive, num - negative
-        if (this.positive && !num.positive) {
-            return 1;
+        // this and num have opposite signs
+        if (this.positive != num.positive) {
+            return this.positive ? 1 : -1;
         }
-        // this - negative, num - positive
-        if (!this.positive && num.positive) {
-            return -1;
-        }
-        // both has the same sigh, but this has more digits
+        // this and num have the same sigh, but this has more digits
         if (absValue.length() > num.absValue.length()) {
             return (this.positive) ? 1 : -1;
         }
-        // both has the same sigh, but this has fewer digits
+        // this and num have the same sigh, but this has fewer digits
         if (absValue.length() < num.absValue.length()) {
             return (this.positive) ? -1 : 1;
         }
-
-        // both has the same sigh and same number of digits
-        if (absValue.length() == num.absValue.length()) {
-            for (int i = 0; i < absValue.length(); i++) {
-                int digitThis = charToDigit(this.absValue.charAt(i));
-                int digitNum = charToDigit(num.absValue.charAt(i));
-                if (digitThis > digitNum) {
-                    return (this.positive) ? 1 : -1;
-                }
-                if (digitThis < digitNum) {
-                    return (this.positive) ? -1 : 1;
-                }
+        // this and num have the same sigh and same number of digits
+        for (int i = 0; i < absValue.length(); i++) {
+            int digitThis = charToDigit(this.absValue.charAt(i));
+            int digitNum = charToDigit(num.absValue.charAt(i));
+            if (digitThis > digitNum) {
+                return (this.positive) ? 1 : -1;
+            }
+            if (digitThis < digitNum) {
+                return (this.positive) ? -1 : 1;
             }
         }
         // this and num are equal
@@ -102,66 +107,51 @@ public class BigNumber {
     }
 
     // addition of two positive numbers
-    private String digitsPlus(String num1, String num2) {
+    private String digitsPlus(String numA, String numB) {
 
         StringBuilder resultSB = new StringBuilder();
 
-        if (num1.length() > num2.length()) {
-            num2 = addSomeZeros(num2, num1.length());
+        if (numA.length() > numB.length()) {
+            numB = alignWithZeros(numB, numA.length());
         }
-        if (num1.length() < num2.length()) {
-            num1 = addSomeZeros(num1, num2.length());
+        if (numA.length() < numB.length()) {
+            numA = alignWithZeros(numA, numB.length());
         }
 
         int addTens = 0;
-        for (int i = num1.length() - 1; i >= 0; i--) {
-            int next = charToDigit(num1.charAt(i)) + charToDigit(num2.charAt(i)) + addTens;
-            if (next < 10) {
-                resultSB.append(next);
-                addTens = 0;
-            } else {
-                resultSB.append(next % 10);
-                addTens = 1;
-            }
+        for (int i = numA.length() - 1; i >= 0; i--) {
+            int next = charToDigit(numA.charAt(i)) + charToDigit(numB.charAt(i)) + addTens;
+            addTens = next / 10;
+            next %= 10;
+            resultSB.append(next);
         }
-        resultSB.trimToSize();
         return resultSB.reverse().toString();
     }
 
     // subtraction of two positive numbers
-    private String digitsMinus(String num1, String num2) {
+    private String digitsMinus(String numA, String numB) {
 
         StringBuilder resultSB = new StringBuilder();
 
-        if (num1.length() > num2.length()) {
-            num2 = addSomeZeros(num2, num1.length());
+        if (numA.length() > numB.length()) {
+            numB = alignWithZeros(numB, numA.length());
         }
-        if (num1.length() < num2.length()) {
-            num1 = addSomeZeros(num1, num2.length());
+        if (numA.length() < numB.length()) {
+            numA = alignWithZeros(numA, numB.length());
         }
 
-        int addUnits = 0;
         int subTens = 0;
-        for (int i = num1.length() - 1; i >= 0; i--) {
-            int next = charToDigit(num1.charAt(i)) - subTens - charToDigit(num2.charAt(i));
+        for (int i = numA.length() - 1; i >= 0; i--) {
+            int next = charToDigit(numA.charAt(i)) - subTens - charToDigit(numB.charAt(i));
             if (next < 0) {
                 subTens = 1;
-                addUnits = 10;
+                next += 10;
             } else {
                 subTens = 0;
             }
-            next += addUnits;
             resultSB.append(next);
-            addUnits = 0;
         }
-
-        int i = resultSB.length() - 1;
-        while (resultSB.charAt(i) == '0' && resultSB.length() > 1) {
-            resultSB.deleteCharAt(i);
-            i--;
-        }
-        resultSB.trimToSize();
-        return resultSB.reverse().toString();
+        return trimZeros(resultSB.reverse().toString());
     }
 
     public BigNumber plus(BigNumber num) {
@@ -185,15 +175,15 @@ public class BigNumber {
         // abs_this is bigger than abs_num
         if (compareAbsValuesInt > 0) {
             String thisMinusNum = digitsMinus(this.absValue, num.absValue);
-            return (this.positive) ? new BigNumber(thisMinusNum, true) : new BigNumber(thisMinusNum, false);
+            return new BigNumber(thisMinusNum, this.positive);
         }
         // abs_this smaller than abs_num
         if (absThis.compareTo(absNum) < 0) {
             String numMinusThis = digitsMinus(num.absValue, this.absValue);
-            return (this.positive) ? new BigNumber(numMinusThis, false) : new BigNumber(numMinusThis, true);
+            return new BigNumber(numMinusThis, !this.positive);
         }
         // |this| == |num|, but one of it is negative, the other - positive
-        return BIG_NUMBER_ZERO;
+        return ZERO;
     }
 
 
@@ -217,14 +207,14 @@ public class BigNumber {
         // abs_this is bigger than abs_num
         if (compareAbsValuesInt > 0) {
             String thisMinusNum = digitsMinus(this.absValue, num.absValue);
-            return (this.positive) ? new BigNumber(thisMinusNum, true) : new BigNumber(thisMinusNum, false);
+            return new BigNumber(thisMinusNum, this.positive);
         }
         // abs_this smaller than abs_num
         if (compareAbsValuesInt < 0) {
             String numMinusThis = digitsMinus(num.absValue, this.absValue);
-            return (this.positive) ? new BigNumber(numMinusThis, false) : new BigNumber(numMinusThis, true);
+            return new BigNumber(numMinusThis, !this.positive);
         }
         // |this| == |num| and both have the same sign
-        return BIG_NUMBER_ZERO;
+        return ZERO;
     }
 }
