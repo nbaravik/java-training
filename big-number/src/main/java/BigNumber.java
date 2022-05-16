@@ -17,7 +17,7 @@ public class BigNumber {
             throw new NumberFormatException("String must not be empty");
         }
 
-        positive = (num.charAt(0) != '-') ? true : false;
+        positive = num.charAt(0) != '-';
         String subString = (positive) ? num : num.substring(1);
 
         if (isStringValid(subString)) {
@@ -55,13 +55,11 @@ public class BigNumber {
 
     // "000123" -> "123"
     private String trimZeros(String str) {
-        StringBuilder sb = new StringBuilder(str);
         int i = 0;
-        while (sb.charAt(i) == '0' && sb.length() > 1) {
-            sb.deleteCharAt(i);
+        while (str.charAt(i) == '0' && i < str.length() - 1 ) {
+            i++;
         }
-        sb.trimToSize();
-        return sb.toString();
+        return str.substring(i);
     }
 
     // "123" -> "000123"
@@ -185,7 +183,6 @@ public class BigNumber {
         // |this| == |num|, but one of it is negative, the other - positive
         return ZERO;
     }
-
 
     public BigNumber minus(BigNumber num) {
 
