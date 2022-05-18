@@ -13,5 +13,9 @@ public interface DurationParser {
 
     String[] unitOrder = {WEEK_UNIT, DAY_UNIT, HOUR_UNIT, MINUTE_UNIT, SECOND_UNIT, MILLISECOND_UNIT};
 
+    String[] convertToSeconds = {WEEK_UNIT, DAY_UNIT, HOUR_UNIT, MINUTE_UNIT, SECOND_UNIT};
+
+    String[] convertToNanoseconds = {MILLISECOND_UNIT};
+
     Duration parse(String durationStr);
 }

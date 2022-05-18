@@ -38,12 +38,12 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
     public static final Map<String, Integer> durationFactorsMap = new HashMap<>();
 
     static {
-        formattingFactorsMap.put(DurationParser.WEEK_UNIT, 604_800);           // 1w in sec => x 604_800
-        formattingFactorsMap.put(DurationParser.DAY_UNIT, 86_400);             // 1d in sec => x 86_400
-        formattingFactorsMap.put(DurationParser.HOUR_UNIT, 3_600);             // 1h in sec => x 3_600
-        formattingFactorsMap.put(DurationParser.MINUTE_UNIT, 60);              // 1m in sec => x 60
-        formattingFactorsMap.put(DurationParser.SECOND_UNIT, 1);               // 1s in sec => x 1
-        formattingFactorsMap.put(DurationParser.MILLISECOND_UNIT, 1_000_000);  // 1ms in nanos => x 1_000_000
+        durationFactorsMap.put(DurationParser.WEEK_UNIT, 604_800);           // 1w in sec => x 604_800
+        durationFactorsMap.put(DurationParser.DAY_UNIT, 86_400);             // 1d in sec => x 86_400
+        durationFactorsMap.put(DurationParser.HOUR_UNIT, 3_600);             // 1h in sec => x 3_600
+        durationFactorsMap.put(DurationParser.MINUTE_UNIT, 60);              // 1m in sec => x 60
+        durationFactorsMap.put(DurationParser.SECOND_UNIT, 1);               // 1s in sec => x 1
+        durationFactorsMap.put(DurationParser.MILLISECOND_UNIT, 1_000_000);  // 1ms in nanos => x 1_000_000
     }
 
     private boolean isDigit(char ch) {
@@ -103,6 +103,7 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
         while (j < DurationParser.unitOrder.length) {
             parsedMap.put(unitOrder[j++], 0);
         }
+        // TODO delete in the end
         System.out.println(parsedMap);
     }
 
@@ -123,6 +124,28 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
         return result.toString();
     }
 
+    private long convertTimeIntoSeconds() {
+        long seconds = 0;
+
+        for (String unit : DurationParser.convertToSeconds) {
+            int value = parsedMap.get(unit);
+            long valueInSeconds = value * durationFactorsMap.get(unit);
+            seconds += valueInSeconds;
+        }
+        return seconds;
+    }
+
+    private int convertTimeIntoNanoseconds() {
+        int nanoseconds = 0;
+
+        for (String unit : DurationParser.convertToNanoseconds) {
+            int value = parsedMap.get(unit);
+            int valueInNanoseconds = value * durationFactorsMap.get(unit);
+            nanoseconds += valueInNanoseconds;
+        }
+        return nanoseconds;
+    }
+
     @Override
     public Duration parse(String durationStr) {
 
@@ -137,8 +160,13 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
             throw new IllegalArgumentException(durationStr + " - invalid date and time format");
         }
 
-        // fill in resultMap
+        // fill in parsedMap
         parseStringIntoMap(durationStr);
+
+        long durationInSeconds = convertTimeIntoSeconds();
+        System.out.println(durationInSeconds);
+        int durationInNanoseconds = convertTimeIntoNanoseconds();
+        System.out.println(durationInNanoseconds);
 
         // if durationStr is valid - save its value
         primaryString = durationStr;
