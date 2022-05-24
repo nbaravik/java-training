@@ -32,18 +32,12 @@ public class BigNumberTest {
             Assert.assertTrue(true);
             Assert.assertEquals("-84368946hh956490 is not a number", e.getMessage());
         }
-
-        try {
-            new BigNumber("-0000");
-        } catch (NumberFormatException e) {
-            Assert.assertTrue(true);
-            Assert.assertEquals("-0000 is not a number", e.getMessage());
-        }
     }
 
     @Test
     public void toStringTest() {
         Assert.assertEquals("0", new BigNumber("0000").toString());
+        Assert.assertEquals("-0", new BigNumber("-0000").toString());
         Assert.assertEquals("11", new BigNumber("000011").toString());
         Assert.assertEquals("-22", new BigNumber("-00000022").toString());
         Assert.assertEquals("176876248768276849480", new BigNumber("176876248768276849480").toString());
@@ -53,6 +47,7 @@ public class BigNumberTest {
     @Test
     public void compareToTest() {
 
+        Assert.assertEquals(0, new BigNumber("0000000").compareTo(new BigNumber("-0000000")));
         Assert.assertEquals(1, new BigNumber("123").compareTo(new BigNumber("-234")));
         Assert.assertEquals(-1, new BigNumber("-123").compareTo(new BigNumber("234")));
         Assert.assertEquals(1, new BigNumber("12345").compareTo(new BigNumber("1234")));
