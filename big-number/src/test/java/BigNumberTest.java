@@ -32,18 +32,12 @@ public class BigNumberTest {
             Assert.assertTrue(true);
             Assert.assertEquals("-84368946hh956490 is not a number", e.getMessage());
         }
-
-        try {
-            new BigNumber("-0000");
-        } catch (NumberFormatException e) {
-            Assert.assertTrue(true);
-            Assert.assertEquals("-0000 is not a number", e.getMessage());
-        }
     }
 
     @Test
     public void toStringTest() {
         Assert.assertEquals("0", new BigNumber("0000").toString());
+        Assert.assertEquals("0", new BigNumber("-0000").toString());
         Assert.assertEquals("11", new BigNumber("000011").toString());
         Assert.assertEquals("-22", new BigNumber("-00000022").toString());
         Assert.assertEquals("176876248768276849480", new BigNumber("176876248768276849480").toString());
@@ -53,6 +47,8 @@ public class BigNumberTest {
     @Test
     public void compareToTest() {
 
+        Assert.assertEquals(0, new BigNumber("0000000").compareTo(new BigNumber("-0000000")));
+        Assert.assertEquals(-1, new BigNumber("0000000").compareTo(new BigNumber("1")));
         Assert.assertEquals(1, new BigNumber("123").compareTo(new BigNumber("-234")));
         Assert.assertEquals(-1, new BigNumber("-123").compareTo(new BigNumber("234")));
         Assert.assertEquals(1, new BigNumber("12345").compareTo(new BigNumber("1234")));
@@ -61,9 +57,9 @@ public class BigNumberTest {
         Assert.assertEquals(1, new BigNumber("-1234").compareTo(new BigNumber("-12345")));
 
         // same abs length
-        Assert.assertEquals(1, new BigNumber("948694896967773").compareTo( new BigNumber("948694896967772")));
+        Assert.assertEquals(1, new BigNumber("948694896967773").compareTo(new BigNumber("948694896967772")));
         Assert.assertEquals(0, new BigNumber("999999999999999").compareTo(new BigNumber("999999999999999")));
-        Assert.assertEquals(-1, new BigNumber("948694896967773").compareTo( new BigNumber("948694896967774")));
+        Assert.assertEquals(-1, new BigNumber("948694896967773").compareTo(new BigNumber("948694896967774")));
 
         Assert.assertEquals(1, new BigNumber("-94948774").compareTo(new BigNumber("-94948775")));
         Assert.assertEquals(0, new BigNumber("-94948774").compareTo(new BigNumber("-94948774")));

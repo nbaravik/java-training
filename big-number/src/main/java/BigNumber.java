@@ -20,13 +20,15 @@ public class BigNumber {
         positive = num.charAt(0) != '-';
         String subString = (positive) ? num : num.substring(1);
 
-        if (isStringValid(subString)) {
-            absValue = trimZeros(subString);
-            if (!positive && "0".equals(absValue)) {  // special case: "-0" is invalid
-                throw new NumberFormatException(num + " is not a number");
-            }
-        } else {
+        if (!hasDigitsOnly(subString)) {
             throw new NumberFormatException(num + " is not a number");
+        }
+
+        absValue = trimZeros(subString);
+
+        // special case for "-0" -> "+0"
+        if (!positive && "0".equals(absValue)) {
+            positive = true;
         }
     }
 
@@ -41,7 +43,7 @@ public class BigNumber {
     }
 
     // string consists of digits and not empty
-    private boolean isStringValid(String str) {
+    private boolean hasDigitsOnly(String str) {
         if (str.length() == 0) return false;
 
         for (int j = 0; j < str.length(); j++) {
@@ -56,7 +58,7 @@ public class BigNumber {
     // "000123" -> "123"
     private String trimZeros(String str) {
         int i = 0;
-        while (str.charAt(i) == '0' && i < str.length() - 1 ) {
+        while (str.charAt(i) == '0' && i < str.length() - 1) {
             i++;
         }
         return str.substring(i);

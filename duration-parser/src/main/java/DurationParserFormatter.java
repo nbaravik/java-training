@@ -17,12 +17,12 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
     private static final Map<String, Integer> unitFactorMap = new HashMap<>();
 
     static {
-        unitFactorMap.put(DurationParser.WEEK_UNIT, 604_800_000);      // 1w in millis => x 604_800_000
-        unitFactorMap.put(DurationParser.DAY_UNIT, 86_400_000);        // 1d in millis => x 86_400_000
-        unitFactorMap.put(DurationParser.HOUR_UNIT, 3_600_000);        // 1h in millis => x 3_600_000
-        unitFactorMap.put(DurationParser.MINUTE_UNIT, 60000);          // 1m in millis => x 60_000
-        unitFactorMap.put(DurationParser.SECOND_UNIT, 1000);           // 1s in millis => x 1000
-        unitFactorMap.put(DurationParser.MILLISECOND_UNIT, 1);         // 1ms in millis => 1 millis
+        unitFactorMap.put(DurationParser.UNIT_WEEK, 604_800_000);      // 1w in millis => x 604_800_000
+        unitFactorMap.put(DurationParser.UNIT_DAY, 86_400_000);        // 1d in millis => x 86_400_000
+        unitFactorMap.put(DurationParser.UNIT_HOUR, 3_600_000);        // 1h in millis => x 3_600_000
+        unitFactorMap.put(DurationParser.UNIT_MINUTE, 60000);          // 1m in millis => x 60_000
+        unitFactorMap.put(DurationParser.UNIT_SECOND, 1000);           // 1s in millis => x 1000
+        unitFactorMap.put(DurationParser.UNIT_MILLISECOND, 1);         // 1ms in millis => 1 millis
     }
 
     private boolean isDigit(char ch) {
@@ -48,7 +48,7 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
                 currentSymbol = durationStr.charAt(++i);
             }
             if (i == durationStr.length() - 1 && isDigit(currentSymbol)) {
-                throw new IllegalArgumentException(durationStr + " - invalid date and time format");
+                throw new IllegalArgumentException(durationStr + " - invalid duration format");
             }
 
             String unit = String.valueOf(currentSymbol);
@@ -56,27 +56,29 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
             if ((i <= durationStr.length() - 2) && !isDigit(durationStr.charAt(i + 1))) {
                 unit += durationStr.charAt(++i);
             }
-            if (unitFactorMap.containsKey(unit)) {
-                // if some unites are missed fill them in with 0
-                // if the order of units "w-d-h-m-s-ms" is mixed - throw exception
-                if (!unit.equalsIgnoreCase(expectedUnit)) {
-                    if (j == 0 || !stringIntoMap.containsKey(unit)) {
-                        while (!unit.equalsIgnoreCase(expectedUnit)) {
-                            stringIntoMap.put(unitOrder[j], 0);
-                            expectedUnit = DurationParser.unitOrder[++j];
-                        }
-                    } else {
-                        throw new IllegalArgumentException(durationStr + " - invalid date and time format");
-                    }
-                }
-                stringIntoMap.put(unit, Integer.parseInt(number.toString()));
-                number.delete(0, number.length());
-                i++;
-                j++;
-            } else {
-                throw new IllegalArgumentException(durationStr + " - invalid date and time format");
+
+            if (!unitFactorMap.containsKey(unit)) {
+                throw new IllegalArgumentException(durationStr + " - invalid duration format");
             }
+
+            if (!unit.equalsIgnoreCase(expectedUnit)) {
+                // if the order of units "w-d-h-m-s-ms" is messed up - throw exception
+                if ( j != 0 || stringIntoMap.containsKey(unit)) {
+                    throw new IllegalArgumentException(durationStr + " - invalid duration format");
+                }
+                // if some unites are missed fill them in with 0
+                while (!unit.equalsIgnoreCase(expectedUnit)) {
+                    stringIntoMap.put(unitOrder[j], 0);
+                    expectedUnit = DurationParser.unitOrder[++j];
+                }
+            }
+
+            stringIntoMap.put(unit, Integer.parseInt(number.toString()));
+            number.setLength(0);
+            i++;
+            j++;
         }
+
         // if some unites are missed in the end fill them in with 0
         while (j < DurationParser.unitOrder.length) {
             stringIntoMap.put(unitOrder[j++], 0);
@@ -105,7 +107,7 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
             throw new IllegalArgumentException("Date must not be empty");
         }
         if (durationStr.length() < 2) {
-            throw new IllegalArgumentException(durationStr + " - invalid date and time format");
+            throw new IllegalArgumentException(durationStr + " - invalid duration format");
         }
         // fill in parsedMap
         Map<String, Integer> map = parseStringIntoMap(durationStr);

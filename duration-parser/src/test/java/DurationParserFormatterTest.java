@@ -11,38 +11,51 @@ public class DurationParserFormatterTest {
     public void illegalArgumentExceptionTest() {
         try {
             dpf.parse(null);
+            Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("Date must not be null", e.getMessage());
         }
         try {
             dpf.parse("");
+            Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("Date must not be empty", e.getMessage());
         }
         try {
             dpf.parse("1");
+            Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("1 - invalid date and time format", e.getMessage());
         }
         try {
             dpf.parse("d");
+            Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("d - invalid date and time format", e.getMessage());
         }
         try {
             dpf.parse("1d50m2w");
+            Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
-            Assert.assertEquals("1d50m2w - invalid date and time format", e.getMessage());
+        }
+        try {
+            dpf.parse("1ab");
+            Assert.assertTrue(false);
+        } catch (IllegalArgumentException e) {
+            Assert.assertTrue(true);
+        }
+        try {
+            dpf.parse("1abc");
+            Assert.assertTrue(false);
+        } catch (IllegalArgumentException e) {
+            Assert.assertTrue(true);
         }
     }
 
     @Test
     public void parseTest() {
+        Assert.assertEquals(Duration.ofMinutes(0), dpf.parse("0w"));
         Assert.assertEquals(Duration.ofMinutes(700000), dpf.parse("700000m"));
         Assert.assertEquals(Duration.ofHours(504), dpf.parse("20d24h"));
         Assert.assertEquals(Duration.ofMillis(4810050), dpf.parse("1h20m10s50ms"));

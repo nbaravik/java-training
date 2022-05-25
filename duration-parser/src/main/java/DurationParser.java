@@ -2,14 +2,14 @@ import java.time.Duration;
 
 public interface DurationParser {
 
-    String WEEK_UNIT = "w";
-    String DAY_UNIT = "d";
-    String HOUR_UNIT = "h";
-    String MINUTE_UNIT = "m";
-    String SECOND_UNIT = "s";
-    String MILLISECOND_UNIT = "ms";
+    String UNIT_WEEK = "w";
+    String UNIT_DAY = "d";
+    String UNIT_HOUR = "h";
+    String UNIT_MINUTE = "m";
+    String UNIT_SECOND = "s";
+    String UNIT_MILLISECOND = "ms";
 
-    String[] unitOrder = {WEEK_UNIT, DAY_UNIT, HOUR_UNIT, MINUTE_UNIT, SECOND_UNIT, MILLISECOND_UNIT};
+    String[] unitOrder = {UNIT_WEEK, UNIT_DAY, UNIT_HOUR, UNIT_MINUTE, UNIT_SECOND, UNIT_MILLISECOND};
 
     Duration parse(String durationStr);
 }
