@@ -1,50 +1,49 @@
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public class Server {
 
-    public static int countClients = 0;
-
     private static Map<Integer, Socket> socketMap = new ConcurrentHashMap<>();
-
 
     private static void startCommunication(Socket socket, int client) {
 
         try (
                 Socket clientSocket = socket;
-                BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))
+                ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
         ) {
+            oos.writeInt(client);
+            oos.flush();
 
             while (true) {
-                String request = reader.readLine();
-                boolean endOfStream = ( request == null );
-                if (endOfStream) {
+                Message receivedMessage = (Message) ois.readObject();
+                if (receivedMessage.getMessage().equalsIgnoreCase(Message.EXIT)) {
+                    System.out.println("client #" + receivedMessage.detId() + " was disconnected.");
                     return;
                 }
-                System.out.println(request + "   client = " + client);
-                System.out.println(socketMap);
                 for (Map.Entry<Integer, Socket> entry : socketMap.entrySet()) {
-                    if ( entry.getKey() != client ) {
-                        entry.getValue().getOutputStream().write(request.getBytes());
-                        entry.getValue().getOutputStream().write('\n');
-                        entry.getValue().getOutputStream().flush();
+                    if (entry.getKey() != client) {
+                        ObjectOutputStream entryOOS = new ObjectOutputStream(entry.getValue().getOutputStream()) {
+                            @Override
+                            public void writeStreamHeader() {
+                                return;
+                            }
+                        };
+                        entryOOS.writeObject(receivedMessage);
+                        entryOOS.flush();
                     }
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
         } finally {
             socketMap.remove(client);
         }
-
     }
 
     public static void main(String[] arg) {
@@ -52,28 +51,22 @@ public class Server {
         try {
             ServerSocket serverSocket = new ServerSocket(8000);
             System.out.println("Server started");
+            int countClients = 0;
 
             while (true) {
 
                 Socket clientSocket = serverSocket.accept();
                 countClients++;
-                int client = countClients;
+                int clientId = countClients;
 
-                socketMap.put(client, clientSocket);
-                System.out.println("client accepted " + client);
+                socketMap.put(clientId, clientSocket);
+                System.out.println("client #" + clientId + " is accepted");
 
-                new Thread(() -> {
-                    startCommunication(clientSocket, client);
-                }).start();
-
-//                ObjectMapper objectMapper = new ObjectMapper();
-//                File jsonFile = new File("test.json");
-//                String request = objectMapper.readValue(jsonFile, String.class);
+                // create a new Thread for each new Client
+                new Thread(() -> startCommunication(clientSocket, clientId)).start();
             }
         } catch (IOException e) {
-
             e.printStackTrace();
         }
-
     }
 }
