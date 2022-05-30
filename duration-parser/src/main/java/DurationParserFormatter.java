@@ -40,6 +40,9 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
 
         while (i <= durationStr.length() - 1) {
 
+            if (j > unitOrder.length - 1) {
+                throw new IllegalArgumentException(durationStr + " - invalid duration format");
+            }
             String expectedUnit = DurationParser.unitOrder[j];
             char currentSymbol = durationStr.charAt(i);
 
@@ -48,6 +51,10 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
                 currentSymbol = durationStr.charAt(++i);
             }
             if (i == durationStr.length() - 1 && isDigit(currentSymbol)) {
+                throw new IllegalArgumentException(durationStr + " - invalid duration format");
+            }
+
+            if (number.isEmpty()) {
                 throw new IllegalArgumentException(durationStr + " - invalid duration format");
             }
 
@@ -63,7 +70,7 @@ public class DurationParserFormatter implements DurationFormatter, DurationParse
 
             if (!unit.equalsIgnoreCase(expectedUnit)) {
                 // if the order of units "w-d-h-m-s-ms" is messed up - throw exception
-                if ( j != 0 || stringIntoMap.containsKey(unit)) {
+                if (j != 0 && stringIntoMap.containsKey(unit)) {
                     throw new IllegalArgumentException(durationStr + " - invalid duration format");
                 }
                 // if some unites are missed fill them in with 0

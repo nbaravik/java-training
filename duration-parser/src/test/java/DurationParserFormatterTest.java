@@ -40,13 +40,13 @@ public class DurationParserFormatterTest {
             Assert.assertTrue(true);
         }
         try {
-            dpf.parse("1ab");
+            dpf.parse("10msd");
             Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
         }
         try {
-            dpf.parse("1abc");
+            dpf.parse("w10d");
             Assert.assertTrue(false);
         } catch (IllegalArgumentException e) {
             Assert.assertTrue(true);
