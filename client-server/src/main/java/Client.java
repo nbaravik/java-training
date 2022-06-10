@@ -35,7 +35,7 @@ public class Client {
                 Message responseMessage = messages.receive(ois);
                 System.out.println(formatMessage(responseMessage));
             }
-        } catch (SocketException se) {
+        } catch (SocketException | EOFException se) {
             System.out.println("Connection to server is lost.");
         } catch (IOException e) {
             e.printStackTrace();
@@ -52,7 +52,7 @@ public class Client {
                 Message requestMessage = new Message(clientId, LocalDateTime.now(), request);
                 messages.send(oos, requestMessage);
             }
-        } catch (SocketException se) {
+        } catch (SocketException | EOFException se) {
             System.out.println("Connection to server is lost.");
         } catch (IOException e) {
             e.printStackTrace();

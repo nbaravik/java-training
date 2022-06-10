@@ -36,7 +36,7 @@ public class Server {
                     }
                 }
             }
-        } catch (SocketException e) {
+        } catch (SocketException | EOFException e) {
             System.out.println("client #" + client + " was disconnected from server");
         } catch (IOException e) {
             e.printStackTrace();
