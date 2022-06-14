@@ -3,8 +3,6 @@ import java.time.LocalDateTime;
 
 public class Message implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     public static final String TIME_FORMAT_PATTERN = "HH:mm:ss";
 
     private final int userId;
@@ -21,7 +19,9 @@ public class Message implements Serializable {
         return userId;
     }
 
-    public LocalDateTime getDateTime() { return dateTime; }
+    public LocalDateTime getDateTime() {
+        return dateTime;
+    }
 
     public String getMessage() {
         return message;

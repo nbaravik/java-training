@@ -1,14 +1,21 @@
+import org.apache.log4j.Logger;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
 
-//  private static MessageStrategy messages = new SerializableStrategy();
-    private static MessageStrategy messages = new JsonStrategy();
+    private static final Logger LOGGER = Logger.getLogger(Server.class);
+
+    private static final int DEFAULT_PORT = 8000;
+
+    private static MessageStrategy messages = new SerializableStrategy();
+    //private static MessageStrategy messages = new JsonStrategy();
 
     private static Map<Integer, ObjectOutputStream> objectOutputStreamsMap = new ConcurrentHashMap<>();
 
@@ -23,23 +30,31 @@ public class Server {
             oos.writeInt(client);
             oos.flush();
 
+
+
             while (true) {
                 Message receivedMessage = messages.receive(ois);
+                LOGGER.debug("Message \"" + receivedMessage.getMessage() + "\" from client#" + receivedMessage.getUserId() +
+                        " was received at " + receivedMessage.getDateTime().format(DateTimeFormatter.ISO_TIME));
 
                 for (Map.Entry<Integer, ObjectOutputStream> entry : objectOutputStreamsMap.entrySet()) {
                     if (entry.getKey() != client) {
                         try {
                             messages.send(entry.getValue(), receivedMessage);
+                            LOGGER.debug("Message from client#" + client + " was sent to client#" + entry.getKey());
                         } catch (SocketException e) {
-                            System.out.println("Client #" + client + " was disconnected from server");
+                            LOGGER.warn("Client#" + entry.getValue() + " was disconnected from server. " +
+                                    "Message from client#" + client + " wasn't sent");
                         }
                     }
                 }
             }
         } catch (SocketException e) {
-            System.out.println("client #" + client + " was disconnected from server");
+            LOGGER.info("Client #" + client + " was disconnected from server");
+        } catch (IllegalStateException e) {
+            LOGGER.error("Client #" + client + " was disconnected from server. The cause: IllegalStateException.");
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Unexpected exception: " + e);
         } finally {
             objectOutputStreamsMap.remove(client);
         }
@@ -47,27 +62,33 @@ public class Server {
 
     public static void main(String[] args) {
 
-        int portNumber = 8000;
+        int portNumber = DEFAULT_PORT;
         if (args.length > 0) {
             portNumber = Integer.parseInt(args[0]);
         }
 
         try {
             ServerSocket serverSocket = new ServerSocket(portNumber);
-            System.out.println("Server started on port " + portNumber);
-            int countClients = 0;
+            if (portNumber == DEFAULT_PORT) {
+                LOGGER.warn("Server started on default port " + DEFAULT_PORT);
+            } else {
+                LOGGER.info("Server started on port " + portNumber);
+            }
 
+            int countClients = 0;
             while (true) {
                 Socket clientSocket = serverSocket.accept();
                 countClients++;
                 int clientId = countClients;
-                System.out.println("client #" + clientId + " is accepted");
+                LOGGER.info("Client #" + clientId + " is accepted");
 
                 // create a new Thread for each new Client
                 new Thread(() -> startCommunication(clientSocket, clientId)).start();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("Unexpected exception: " + e);
+        } finally {
+            LOGGER.info("Server finished its work.");
         }
     }
 }

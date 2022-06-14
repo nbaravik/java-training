@@ -8,18 +8,18 @@ import java.util.Locale;
 
 public class JsonStrategy implements MessageStrategy {
 
-    private Gson GSON;
+    private Gson gson;
 
     public JsonStrategy() {
         GsonBuilder gsonBuilder = new GsonBuilder();
         gsonBuilder.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeSerializer());
         gsonBuilder.registerTypeAdapter(LocalDateTime.class, new LocalDateTimeDeserializer());
-        GSON = gsonBuilder.setPrettyPrinting().create();
+        gson = gsonBuilder.setPrettyPrinting().create();
     }
 
     @Override
     public void send(ObjectOutputStream oos, Message msg) throws IOException {
-        String jsonString = GSON.toJson(msg);
+        String jsonString = gson.toJson(msg);
         oos.writeObject(jsonString);
         oos.flush();
     }
@@ -29,7 +29,7 @@ public class JsonStrategy implements MessageStrategy {
 
         try {
             String jsonString = (String) ois.readObject();
-            Message msg = GSON.fromJson(jsonString, Message.class);
+            Message msg = gson.fromJson(jsonString, Message.class);
             return msg;
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException(e);

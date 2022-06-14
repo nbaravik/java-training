@@ -1,0 +1,12 @@
+22-06-14 15:30:30 INFO  main      Server - Server started on port 8888
+22-06-14 15:30:33 INFO  main      Server - Client #1 is accepted
+22-06-14 15:30:35 INFO  main      Server - Client #2 is accepted
+22-06-14 15:30:37 DEBUG Thread-1  Server - Message "hello" from client#2 was received at 15:30:37.4525748
+22-06-14 15:30:37 DEBUG Thread-1  Server - Message from client#2 was sent to client#1
+22-06-14 15:30:40 DEBUG Thread-0  Server - Message "hi" from client#1 was received at 15:30:40.9557003
+22-06-14 15:30:40 DEBUG Thread-0  Server - Message from client#1 was sent to client#2
+22-06-14 15:30:43 INFO  Thread-0  Server - Client #1 was disconnected from server
+22-06-14 15:30:47 INFO  main      Server - Client #3 is accepted
+22-06-14 15:30:49 DEBUG Thread-2  Server - Message "hello" from client#3 was received at 15:30:49.6550581
+22-06-14 15:30:49 DEBUG Thread-2  Server - Message from client#3 was sent to client#2
+22-06-14 15:31:00 INFO  Thread-2  Server - Client #3 was disconnected from server

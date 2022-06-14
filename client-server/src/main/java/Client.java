@@ -9,20 +9,13 @@ public class Client {
 
     private static int clientId;
 
-//  private static MessageStrategy messages = new SerializableStrategy();
-    private static MessageStrategy messages = new JsonStrategy();
+    private static MessageStrategy messages = new SerializableStrategy();
+    //private static MessageStrategy messages = new JsonStrategy();
 
     private static String formatMessage(Message msg) {
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Message.TIME_FORMAT_PATTERN);
-        StringBuilder sb = new StringBuilder();
-        sb.append("user#");
-        sb.append(msg.getUserId());
-        sb.append(" ");
-        sb.append(msg.getDateTime().format(formatter));
-        sb.append(": ");
-        sb.append(msg.getMessage());
-        return sb.toString();
+        return String.format("user#%d %s: %s", msg.getUserId(), msg.getDateTime().format(formatter), msg.getMessage());
     }
 
     private static void readFromServer(Socket clientSocket) {
@@ -38,7 +31,7 @@ public class Client {
         } catch (SocketException se) {
             System.out.println("Connection to server is lost.");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Unexpected problem: " + e);
         }
     }
 
@@ -55,7 +48,7 @@ public class Client {
         } catch (SocketException se) {
             System.out.println("Connection to server is lost.");
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Unexpected problem: " + e);
         }
     }
 
@@ -72,7 +65,7 @@ public class Client {
             // write to server in main
             writeToServer(clientSocket);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("An attempt to connect to host 127.0.0.1 on port " + portNumber + " failed.");
         }
     }
 }
