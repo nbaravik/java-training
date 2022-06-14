@@ -30,8 +30,6 @@ public class Server {
             oos.writeInt(client);
             oos.flush();
 
-
-
             while (true) {
                 Message receivedMessage = messages.receive(ois);
                 LOGGER.debug("Message \"" + receivedMessage.getMessage() + "\" from client#" + receivedMessage.getUserId() +
@@ -49,7 +47,7 @@ public class Server {
                     }
                 }
             }
-        } catch (SocketException e) {
+        } catch (SocketException | EOFException e) {
             LOGGER.info("Client #" + client + " was disconnected from server");
         } catch (IllegalStateException e) {
             LOGGER.error("Client #" + client + " was disconnected from server. The cause: IllegalStateException.");
@@ -87,8 +85,6 @@ public class Server {
             }
         } catch (IOException e) {
             LOGGER.error("Unexpected exception: " + e);
-        } finally {
-            LOGGER.info("Server finished its work.");
         }
     }
 }
