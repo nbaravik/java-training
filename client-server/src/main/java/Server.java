@@ -1,6 +1,7 @@
 import org.apache.log4j.Logger;
 
 import java.io.*;
+import java.lang.instrument.IllegalClassFormatException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -60,6 +61,8 @@ public class Server {
 
     public static void main(String[] args) {
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> LOGGER.info("Server stopped by user")));
+
         int portNumber = DEFAULT_PORT;
         if (args.length > 0) {
             portNumber = Integer.parseInt(args[0]);
@@ -83,8 +86,10 @@ public class Server {
                 // create a new Thread for each new Client
                 new Thread(() -> startCommunication(clientSocket, clientId)).start();
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOGGER.error("Unexpected exception: " + e);
+        } finally {
+            LOGGER.info("Server stopped");
         }
     }
 }
