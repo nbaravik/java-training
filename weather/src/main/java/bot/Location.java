@@ -1,4 +1,4 @@
-package weather;
+package bot;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,14 +16,6 @@ public class Location {
         this.city = cityName;
         this.country = countryName;
         this.localtime = localtime;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public String getCountry() {
-        return country;
     }
 
     public String getLocaltime() {
