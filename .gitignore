@@ -4,3 +4,4 @@ out/
 lib/
 target/
 *.log
+application.properties
