@@ -1,7 +1,7 @@
 package bot;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.Update;
@@ -14,6 +14,8 @@ import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -23,9 +25,9 @@ public class WeatherBot {
     private static final String HOST_URL = "http://api.weatherstack.com/current?access_key=";
 
     private static final Logger LOGGER = Logger.getLogger(WeatherBot.class);
+    private static final OkHttpClient CLIENT = new OkHttpClient();
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-    private static final OkHttpClient client = new OkHttpClient();
+    private static WeatherDB weatherDatabase = null;
 
     public static void main(String[] args) {
 
@@ -40,8 +42,16 @@ public class WeatherBot {
             System.exit(0);
         }
 
+        if (args.length == 2) {
+            LOGGER.warn("Database access password is undefined. Connection to the database is impossible.");
+            LOGGER.info("Weather forecast search will be executed only through API weatherstack.com");
+        }
+
         final String token = args[0];
         final String accessKey = args[1];
+        if (args.length == 3) {
+            weatherDatabase = new WeatherDB(args[2]);
+        }
 
         TelegramBot bot = new TelegramBot(token);
         LOGGER.info("Telegram bot " + NAME + " started");
@@ -54,29 +64,43 @@ public class WeatherBot {
 
                 LOGGER.info("Update from chat#" + chatId + ". Message: " + chatMessage);
 
-                if (chatMessage.equalsIgnoreCase("/start")) {
-                    SendMessage welcomeMessage = new SendMessage(chatId, "<b>Hello! I'm Weather Telegram Bot!</b>\n" +
-                            "Enter the name of the city and I will send you the current weather in it.").parseMode(ParseMode.HTML);
-                    bot.execute(welcomeMessage);
-                    LOGGER.debug("Welcome message for chat#" + chatId + " is sent");
-                } else {
-
-                    SendMessage message;
-                    Weather weather = getWeather(chatMessage, accessKey);
-
-                    if (weather == null) {
-                        message = new SendMessage(chatId,
-                                "<b>Sorry! Something went wrong.</b>\nWe are unable to provide you with data of the weather in " +
-                                        chatMessage + ".\nTry again later.").parseMode(ParseMode.HTML);;
-                    } else {
-                        message = new SendMessage(chatId, formatMessage(weather)).parseMode(ParseMode.HTML);
+                switch (chatMessage.toLowerCase(Locale.ROOT)) {
+                    case "/start": {
+                        SendMessage welcomeMessage = new SendMessage(chatId, "<b>Hello! I'm Weather Telegram Bot!</b>\n" +
+                                "Enter the name of the city and I will send you the current weather in it.").parseMode(ParseMode.HTML);
+                        bot.execute(welcomeMessage);
+                        LOGGER.debug("Welcome message for chat#" + chatId + " is sent");
+                        break;
                     }
-                    bot.execute(message);
+                    default: {
+                        SendMessage message;
+                        Weather weather;
+                        // try to get weather information from database
+                        if (weatherDatabase != null) {
+                            weather = manageWeatherFromDatabase(chatMessage);
+                            if (weather != null) {
+                                message = new SendMessage(chatId, formatMessage(weather)).parseMode(ParseMode.HTML);
+                                LOGGER.debug("Valid information about the weather in " + chatMessage + " is found in the database.");
+                                LOGGER.debug("Current weather in " + weather.getLocation().getCity() + ", " + weather.getLocation().getCountry() +
+                                        " were sent to chat#" + chatId);
+                                bot.execute(message);
+                                break;
+                            }
+                        }
 
-                    if (weather == null) {
-                        LOGGER.debug("Unable to send current weather in " + chatMessage + " to chat#" + chatId);
-                    } else {
-                        LOGGER.debug("Current weather in " + weather.getLocation().getCityAndCountry() + " were sent to chat#" + chatId);
+                        // try to get weather information from API
+                        weather = manageWeatherFromAPI(chatMessage, accessKey);
+                        if (weather == null) {
+                            message = new SendMessage(chatId,
+                                    "<b>Sorry! Something went wrong.</b>\nWe are unable to provide you with data of the weather in " +
+                                            chatMessage + ".\nTry again later.").parseMode(ParseMode.HTML);
+                            LOGGER.debug("Unable to send current weather in " + chatMessage + " to chat#" + chatId);
+                        } else {
+                            message = new SendMessage(chatId, formatMessage(weather)).parseMode(ParseMode.HTML);
+                            LOGGER.debug("Current weather in " + weather.getLocation().getCity() + ", " + weather.getLocation().getCountry() +
+                                    " were sent to chat#" + chatId);
+                        }
+                        bot.execute(message);
                     }
                 }
             }
@@ -94,8 +118,27 @@ public class WeatherBot {
         });
     }
 
-    private static Weather getWeather(String cityName, String accessKey) {
+    private static Weather manageWeatherFromDatabase(String cityName) {
+
+        Weather weather = weatherDatabase.getWeatherByCityName(cityName);
+        // case 1: there is no info in DB
+        if (weather == null) {
+            LOGGER.debug("There is no information about the weather in " + cityName + " in the database.");
+            return null;
+        }
+        // case 2: weather info from DB is expired, it must be deleted
+        if (!weather.isRelevant()) {
+            LOGGER.debug("Information about the weather in " + cityName + " from the database is expired.");
+            weatherDatabase.deleteExpiredWeatherInfo(cityName);
+            return null;
+        }
+        // case 3: valid weather info from DB
+        return weather;
+    }
+
+    private static Weather manageWeatherFromAPI(String cityName, String accessKey) {
         Weather currentWeather = null;
+
         Request request = new Request.Builder()
                 .url(HOST_URL + accessKey + "&query=" + cityName)
                 .addHeader("Accept-Encoding", "gzip, deflate")
@@ -104,7 +147,7 @@ public class WeatherBot {
         LOGGER.debug("Request: " + request.url());
 
         try {
-            Response response = client.newCall(request).execute();
+            Response response = CLIENT.newCall(request).execute();
 
             int responseCode = response.code();
             LOGGER.debug("Request executed. Response code: " + responseCode);
@@ -113,7 +156,7 @@ public class WeatherBot {
                 return null;
             }
             if (responseCode >= 200 && responseCode < 300) {
-                LOGGER.info("Request was executed successful. Response code: " + responseCode+ "; " + response.body());
+                LOGGER.info("Request was executed successful. Response code: " + responseCode + "; " + response.body());
             }
             if (responseCode >= 400 && responseCode < 500) {
                 LOGGER.warn("Client error, Response code: " + responseCode + "; " + response.body());
@@ -123,11 +166,17 @@ public class WeatherBot {
                 LOGGER.warn("Server error, Response code: " + responseCode + "; " + response.body());
                 return null;
             }
-            currentWeather = mapper.readValue(new GZIPInputStream(response.body().byteStream()), Weather.class);
+
+            currentWeather = WeatherObjectMapper.getInstance().getMapper().
+                    readValue(new GZIPInputStream(response.body().byteStream()), Weather.class);
 
             if (currentWeather.hasError()) {
-                LOGGER.error("Request error. " + currentWeather.getError().getErrorDescription());
+                LOGGER.error("Request error was detected. " + currentWeather.getError().getErrorDescription());
                 return null;
+            }
+            // insert weather information into database, if it is available
+            if (weatherDatabase != null) {
+                weatherDatabase.insertWeatherInfo(currentWeather);
             }
 
         } catch (JsonProcessingException e) {
@@ -141,9 +190,11 @@ public class WeatherBot {
     }
 
     private static String formatMessage(Weather weather) {
+
         StringBuilder sb = new StringBuilder();
-        sb.append(weather.getLocation().getLocaltime() + "\n");
-        sb.append("<b>Weather in " + weather.getLocation().getCityAndCountry() + "</b>\n");
+        DateTimeFormatter dtf = WeatherObjectMapper.getInstance().getDateTimeFormat();
+        sb.append(weather.getLocation().getLocaltime().format(dtf) + "\n");
+        sb.append("<b>Weather in " + weather.getLocation().getCity() + ", " + weather.getLocation().getCountry() + "</b>\n");
         sb.append("Temperature: " + weather.getCurrent().getTemperature() + "°C, feels like " + weather.getCurrent().getFeelslike() + "°C\n");
         sb.append("Humidity: " + weather.getCurrent().getHumidity() + "%\n");
         sb.append("Cloudcover: " + weather.getCurrent().getCloudcover() + "%\n");
