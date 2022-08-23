@@ -7,7 +7,6 @@ import java.sql.*;
 
 public class WeatherDB {
 
-    private static final String JDBC_DRIVER = "org.postgresql.Driver";
     private static final String URL = "jdbc:postgresql://localhost:5432/MyWeatherDB";
     private static final String USERNAME = "postgres";
 
@@ -17,36 +16,29 @@ public class WeatherDB {
 
     private static final Logger LOGGER = Logger.getLogger(WeatherDB.class);
 
-    private String password;
+    private static Connection connection;
 
     WeatherDB(String pass) {
-        password = pass;
         try {
-            Class.forName(JDBC_DRIVER);
-        } catch (ClassNotFoundException e) {
-            LOGGER.error("No Postgresql Driver found. " + e);
+            connection = DriverManager.getConnection(URL, USERNAME, pass);
+            LOGGER.info("Connection to the database is established.");
+        } catch (SQLException e) {
+            LOGGER.fatal("Connection to the database is failed. " + e);
+            throw new RuntimeException("Connection to the database is failed. " + e);
         }
     }
 
     protected Weather getWeatherByCityName(String cityName) {
         Weather weather = null;
 
-        try (Connection conn = DriverManager.getConnection(URL, USERNAME, password)) {
-            if (!conn.isClosed()) {
-                LOGGER.info("Connection to the database is established.");
-            }
-            PreparedStatement pstmt = conn.prepareStatement(SQL_SELECT);
-            pstmt.setString(1, cityName);
-            ResultSet rs = pstmt.executeQuery();
-            LOGGER.debug("Statement: " + pstmt);
+        try (PreparedStatement stmt = selectPreparedStatement(cityName);
+                ResultSet rs = stmt.executeQuery()) {
+            LOGGER.debug("Statement: " + stmt);
             if (rs.next()) {
                 String infoJson = rs.getString("info");
                 LOGGER.debug("Query is executed successfully. Result: " + infoJson);
                 weather = WeatherObjectMapper.getInstance().getMapper().readValue(infoJson, Weather.class);
             }
-            rs.close();
-            pstmt.close();
-
         } catch (SQLException e) {
             LOGGER.error("Problem with the database. " + e);
         } catch (JsonProcessingException e) {
@@ -55,48 +47,51 @@ public class WeatherDB {
         return weather;
     }
 
+    private PreparedStatement selectPreparedStatement(String cityName) throws SQLException {
+        PreparedStatement pstmt = connection.prepareStatement(SQL_SELECT);
+        pstmt.setString(1, cityName);
+        return pstmt;
+    }
+
     protected void deleteExpiredWeatherInfo(String cityName) {
 
-        try (Connection conn = DriverManager.getConnection(URL, USERNAME, password)) {
-            if (!conn.isClosed()) {
-                LOGGER.info("Connection to the database is established.");
-            }
-            PreparedStatement pstmt = conn.prepareStatement(SQL_DELETE);
-            pstmt.setString(1, cityName);
-            LOGGER.debug("Statement: " + pstmt);
-            if (pstmt.executeUpdate() > 0) {
+        try (PreparedStatement stmt = deletePreparedStatement(cityName)) {
+            LOGGER.debug("Statement: " + stmt);
+            if (stmt.executeUpdate() > 0) {
                 LOGGER.debug("Expired information about weather in " + cityName + " was deleted from database.");
             } else {
                 LOGGER.debug("Database update failed. Information about weather in " + cityName + " wasn't deleted.");
             }
-            pstmt.close();
-
         } catch (SQLException e) {
             LOGGER.error("Problem with the database. " + e);
         }
     }
 
-    protected void insertWeatherInfo(Weather weather) {
-        try (Connection conn = DriverManager.getConnection(URL, USERNAME, password)) {
-            if (!conn.isClosed()) {
-                LOGGER.info("Connection to the database is established.");
-            }
-            PreparedStatement pstmt = conn.prepareStatement(SQL_INSERT);
-            pstmt.setString(1, weather.getLocation().getCity());
-            pstmt.setString(2, WeatherObjectMapper.getInstance().getMapper().writeValueAsString(weather));
+    private PreparedStatement deletePreparedStatement(String cityName) throws SQLException {
+        PreparedStatement pstmt = connection.prepareStatement(SQL_DELETE);
+        pstmt.setString(1, cityName);
+        return pstmt;
+    }
 
-            LOGGER.debug("Statement: " + pstmt);
-            if (pstmt.executeUpdate() > 0) {
+    protected void insertWeatherInfo(Weather weather) {
+        try (PreparedStatement stmt = insertPreparedStatement(weather)) {
+            LOGGER.debug("Statement: " + stmt);
+            if (stmt.executeUpdate() > 0) {
                 LOGGER.debug("New information about weather in " + weather.getLocation().getCity() + " was added to database.");
             } else {
                 LOGGER.debug("Database update failed. Information about weather in " + weather.getLocation().getCity() + " wasn't added.");
             }
-            pstmt.close();
-
         } catch (SQLException e) {
             LOGGER.error("Problem with the database. " + e);
         } catch (JsonProcessingException e) {
             LOGGER.error("Json processing exception. " + e);
         }
+    }
+
+    private PreparedStatement insertPreparedStatement(Weather weather) throws SQLException, JsonProcessingException {
+        PreparedStatement pstmt = connection.prepareStatement(SQL_INSERT);
+        pstmt.setString(1, weather.getLocation().getCity());
+        pstmt.setString(2, WeatherObjectMapper.getInstance().getMapper().writeValueAsString(weather));
+        return pstmt;
     }
 }
