@@ -16,7 +16,7 @@ public class WeatherDB {
 
     private static final Logger LOGGER = Logger.getLogger(WeatherDB.class);
 
-    private static Connection connection;
+    private Connection connection;
 
     WeatherDB(String pass) {
         try {
