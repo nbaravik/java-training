@@ -34,8 +34,7 @@ public class WeatherApiClient implements WeatherClient {
 
         LOGGER.debug("Request: " + request.url());
 
-        try {
-            Response response = CLIENT.newCall(request).execute();
+        try ( Response response = CLIENT.newCall(request).execute() ) {
 
             int responseCode = response.code();
             LOGGER.debug("Request executed. Response code: " + responseCode);

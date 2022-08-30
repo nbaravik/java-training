@@ -47,7 +47,6 @@ public class WeatherBot {
         TelegramBot bot = new TelegramBot(TOKEN);
         LOGGER.info("Telegram bot " + NAME + " started");
 
-        final WeatherClient finalWeatherClient = weatherClient;
         bot.setUpdatesListener(updates -> {
             for (Update update : updates) {
 
@@ -65,20 +64,8 @@ public class WeatherBot {
                         break;
                     }
                     default: {
-                        SendMessage message;
                         Weather weather = weatherClient.byCity(chatMessage);
-
-                        if (weather == null) {
-                            message = new SendMessage(chatId,
-                                    "<b>Sorry! Something went wrong.</b>\nWe are unable to provide you with data of the weather in " +
-                                            chatMessage + ".\nTry again later.").parseMode(ParseMode.HTML);
-                            LOGGER.debug("Unable to send current weather in " + chatMessage + " to chat#" + chatId);
-                        } else {
-                            message = new SendMessage(chatId, formatMessage(weather)).parseMode(ParseMode.HTML);
-                            LOGGER.debug("Current weather in " + weather.getLocation().getCity() + ", " + weather.getLocation().getCountry() +
-                                    " were sent to chat#" + chatId);
-                        }
-                        bot.execute(message);
+                        bot.execute(getWeatherMessage(chatMessage, weather, chatId));
                     }
                 }
             }
@@ -94,6 +81,17 @@ public class WeatherBot {
                 LOGGER.error("Unexpected error: " + e);
             }
         });
+    }
+
+    public static SendMessage getWeatherMessage(String cityName, Weather weather, long chatId) {
+        if (weather == null) {
+            LOGGER.debug("Unable to send current weather in " + cityName + " to chat#" + chatId);
+            return new SendMessage(chatId, "<b>Sorry! Something went wrong.</b>\nWe are unable to provide you with data of the weather in " +
+                    cityName + ".\nTry again later.").parseMode(ParseMode.HTML);
+        }
+
+        LOGGER.debug("Current weather in " + weather.getLocation().getCity() + ", " + weather.getLocation().getCountry() + " were sent to chat#" + chatId);
+        return new SendMessage(chatId, formatMessage(weather)).parseMode(ParseMode.HTML);
     }
 
     private static String formatMessage(Weather weather) {
